@@ -13,6 +13,10 @@ class ViewController: NSViewController {
     private var paths: [DrawingPath] = []
     private var renderer: Renderer!
     private var origin: CGPoint = .zero
+    private var pendingPath: DrawingPath?
+    
+    private var color: CGColor = .init(red: 0.0, green: 0.0, blue: 0.0, alpha: 1.0)
+    private var strokeWidth = 2.0
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -26,13 +30,6 @@ class ViewController: NSViewController {
         view.delegate = self
         view.isPaused = true
         view.enableSetNeedsDisplay = true
-        
-        let path = DrawingPath(color: .init(red: 0.2, green: 0.4, blue: 0.6, alpha: 1.0), strokeWidth: 2.0)
-        path.addPointSample(location: .init(x: 100, y: 100))
-        path.addPointSample(location: .init(x: 100, y: 200))
-        path.addPointSample(location: .init(x: 300, y: 400))
-        
-        paths.append(path)
     }
 
     override var representedObject: Any? {
@@ -41,6 +38,36 @@ class ViewController: NSViewController {
         }
     }
 
+    override func scrollWheel(with event: NSEvent) {
+        let factor = event.hasPreciseScrollingDeltas ? 1.0 : 5.0
+        origin.x -= event.scrollingDeltaX * factor
+        origin.y += event.scrollingDeltaY * factor
+        view.needsDisplay = true
+    }
+    
+    private func convertEventLocation(_ location: NSPoint) -> CGPoint {
+        let point = view.convert(location, from: nil)
+        return CGPoint(x: point.x + origin.x, y: point.y + origin.y)
+    }
+    
+    override func mouseDown(with event: NSEvent) {
+        pendingPath = DrawingPath(color: color, strokeWidth: strokeWidth)
+        pendingPath?.addPointSample(location: convertEventLocation(event.locationInWindow))
+    }
+    
+    override func mouseUp(with event: NSEvent) {
+        if let pendingPath = pendingPath {
+            paths.append(pendingPath)
+            self.pendingPath = nil
+        }
+    }
+    
+    override func mouseDragged(with event: NSEvent) {
+        if let pendingPath = pendingPath {
+            pendingPath.addPointSample(location: convertEventLocation(event.locationInWindow))
+            view.needsDisplay = true
+        }
+    }
 
 }
 
@@ -50,7 +77,8 @@ extension ViewController: MTKViewDelegate {
     }
     
     func draw(in view: MTKView) {
-        renderer.render(in: view, paths: paths, viewport: CGRect(origin: origin, size: view.bounds.size))
+        let pendingPaths = pendingPath.map{ [$0] } ?? []
+        renderer.render(in: view, paths: paths + pendingPaths, viewport: CGRect(origin: origin, size: view.bounds.size))
     }
     
     

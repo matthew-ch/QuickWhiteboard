@@ -16,7 +16,7 @@ struct VertexWithUV {
 vertex float4 simpleVertex(const constant float4 &frameRect [[ buffer(0) ]],
                            const device float2* vertexArray [[ buffer(1) ]],
                            unsigned int vid [[ vertex_id ]]) {
-    return float4((vertexArray[vid] - frameRect.xy) / frameRect.zw, 0.0, 1.0);
+    return float4((vertexArray[vid] - frameRect.xy) / frameRect.zw * 2.0 - 1.0, 0.0, 1.0);
 }
 
 fragment float4 simpleFragment(const constant float4& color [[ buffer(0) ]]) {
@@ -28,7 +28,7 @@ vertex VertexWithUV textureVertex(const constant float4 &frameRect [[ buffer(1) 
                                   const device float2* uv_array [[ buffer(2) ]],
                                   unsigned int vid [[ vertex_id ]]) {
     return VertexWithUV {
-        .position = float4((vertexArray[vid] - frameRect.xy) / frameRect.zw, 0.0, 1.0),
+        .position = float4((vertexArray[vid] - frameRect.xy) / frameRect.zw * 2.0 - 1.0, 0.0, 1.0),
         .uv = uv_array[vid]
     };
 }
