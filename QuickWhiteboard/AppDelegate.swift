@@ -10,11 +10,12 @@ import Cocoa
 @main
 class AppDelegate: NSObject, NSApplicationDelegate {
 
-    
-
+    var windowControllers: [WindowController] = []
 
     func applicationDidFinishLaunching(_ aNotification: Notification) {
         // Insert code here to initialize your application
+        newDocument(nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(windowDidClose(_:)), name: NSWindow.willCloseNotification, object: nil)
     }
 
     func applicationWillTerminate(_ aNotification: Notification) {
@@ -30,5 +31,17 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
 
+    @IBAction func newDocument(_ sender: Any?) {
+        let windowController = WindowController.createNewWindowController()
+        windowControllers.append(windowController)
+        windowController.showWindow(nil)
+    }
+    
+    @objc func windowDidClose(_ sender: Notification) {
+        let window = sender.object as! NSWindow
+        if let windowController = window.windowController as? WindowController, let index = windowControllers.firstIndex(of: windowController) {
+            windowControllers.remove(at: index)
+        }
+    }
 }
 

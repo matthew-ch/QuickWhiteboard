@@ -31,12 +31,26 @@ class ViewController: NSViewController {
         view.isPaused = true
         view.enableSetNeedsDisplay = true
     }
+    
+    override func viewDidAppear() {
+        super.viewDidAppear()
+        view.addTrackingArea(.init(rect: view.bounds, options: [.inVisibleRect, .cursorUpdate, .activeInKeyWindow], owner: self))
+    }
+    
+    override func viewDidDisappear() {
+        super.viewDidDisappear()
+        for area in view.trackingAreas {
+            view.removeTrackingArea(area)
+        }
+    }
 
     override var representedObject: Any? {
         didSet {
         // Update the view, if already loaded.
         }
     }
+    
+    // MARK: event handling
 
     override func scrollWheel(with event: NSEvent) {
         let factor = event.hasPreciseScrollingDeltas ? 1.0 : 5.0
@@ -69,6 +83,9 @@ class ViewController: NSViewController {
         }
     }
 
+    override func cursorUpdate(with event: NSEvent) {
+        NSCursor.crosshair.set()
+    }
 }
 
 extension ViewController: MTKViewDelegate {

@@ -7,7 +7,14 @@
 
 import Cocoa
 
-class WindowController: NSWindowController {
+final class WindowController: NSWindowController {
+    
+    static let identifier = "WindowController"
+    
+    static func createNewWindowController() -> Self {
+        let storyboard = NSStoryboard(name: "Main", bundle: nil)
+        return storyboard.instantiateController(withIdentifier: Self.identifier) as! Self
+    }
 
     @IBOutlet weak var toolbar: NSToolbar!
 
