@@ -34,7 +34,7 @@ final class Renderer {
         texturePipelineState = try! device.makeRenderPipelineState(descriptor: pipelineDescriptor)
     }
     
-    func render(in view: MTKView, paths: [DrawingPath], viewport: CGRect) {
+    func render(in view: MTKView, paths: [DrawingPath], viewport: CGRect, debug: Bool = false) {
         guard let renderPassDescriptor = view.currentRenderPassDescriptor else {
             return;
         }
@@ -50,7 +50,7 @@ final class Renderer {
             encoder.setVertexBuffer(path.uploadToBuffer(device: device), offset: 0, index: 1)
             var color = path.color
             encoder.setFragmentBytes(&color, length: MemoryLayout<SIMD4<Float>>.size, index: 0)
-            encoder.drawPrimitives(type: .lineStrip, vertexStart: 0, vertexCount: path.points.count)
+            encoder.drawPrimitives(type: debug ? .point : .lineStrip, vertexStart: 0, vertexCount: path.points.count)
         }
         encoder.endEncoding()
         commandBuffer.present(view.currentDrawable!)

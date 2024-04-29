@@ -8,15 +8,23 @@
 #include <metal_stdlib>
 using namespace metal;
 
+struct Vertex {
+    float4 position [[ position ]];
+    float pointSize [[ point_size ]];
+};
+
 struct VertexWithUV {
     float4 position [[ position ]];
     float2 uv;
 };
 
-vertex float4 simpleVertex(const constant float4 &frameRect [[ buffer(0) ]],
+vertex Vertex simpleVertex(const constant float4 &frameRect [[ buffer(0) ]],
                            const device float2* vertexArray [[ buffer(1) ]],
                            unsigned int vid [[ vertex_id ]]) {
-    return float4((vertexArray[vid] - frameRect.xy) / frameRect.zw * 2.0 - 1.0, 0.0, 1.0);
+    return Vertex {
+        .position = float4((vertexArray[vid] - frameRect.xy) / frameRect.zw * 2.0 - 1.0, 0.0, 1.0),
+        .pointSize = 2.0
+    };
 }
 
 fragment float4 simpleFragment(const constant float4& color [[ buffer(0) ]]) {

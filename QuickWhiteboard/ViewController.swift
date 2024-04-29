@@ -17,6 +17,8 @@ class ViewController: NSViewController {
     
     private var color: CGColor = .init(red: 0.0, green: 0.0, blue: 0.0, alpha: 1.0)
     private var strokeWidth = 2.0
+    
+    private var debug = false
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -86,6 +88,11 @@ class ViewController: NSViewController {
     override func cursorUpdate(with event: NSEvent) {
         NSCursor.crosshair.set()
     }
+    
+    @IBAction func toggleDebug(_ sender: Any) {
+        debug.toggle()
+        view.needsDisplay = true
+    }
 }
 
 extension ViewController: MTKViewDelegate {
@@ -95,7 +102,7 @@ extension ViewController: MTKViewDelegate {
     
     func draw(in view: MTKView) {
         let pendingPaths = pendingPath.map{ [$0] } ?? []
-        renderer.render(in: view, paths: paths + pendingPaths, viewport: CGRect(origin: origin, size: view.bounds.size))
+        renderer.render(in: view, paths: paths + pendingPaths, viewport: CGRect(origin: origin, size: view.bounds.size), debug: debug)
     }
     
     

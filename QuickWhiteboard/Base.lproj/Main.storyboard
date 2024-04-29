@@ -201,7 +201,12 @@
                             <allowedToolbarItems>
                                 <toolbarItem implicitItemIdentifier="NSToolbarSpaceItem" id="xTR-Eq-MuQ"/>
                                 <toolbarItem implicitItemIdentifier="NSToolbarFlexibleSpaceItem" id="Zqe-BE-ZNC"/>
-                                <toolbarItem implicitItemIdentifier="F79B3E7F-A05D-4C4D-B086-C66A554A8AFB" label="Export" paletteLabel="Export" tag="-1" image="square.and.arrow.up" catalog="system" sizingBehavior="auto" id="Oz4-9F-bPz">
+                                <toolbarItem implicitItemIdentifier="8A3AE7B3-E2EF-4860-ABC3-B89E94C83B1E" explicitItemIdentifier="app.debug" label="Toggle Debug" paletteLabel="Toggle Debug" tag="-1" image="ladybug" catalog="system" sizingBehavior="auto" id="ZWn-l2-Yap">
+                                    <connections>
+                                        <action selector="toggleDebug:" target="Oky-zY-oP4" id="RBQ-fM-LcY"/>
+                                    </connections>
+                                </toolbarItem>
+                                <toolbarItem implicitItemIdentifier="F79B3E7F-A05D-4C4D-B086-C66A554A8AFB" explicitItemIdentifier="app.export" label="Export" paletteLabel="Export" tag="-1" image="square.and.arrow.up" catalog="system" sizingBehavior="auto" id="Oz4-9F-bPz">
                                     <connections>
                                         <action selector="onExport:" target="B8D-0N-5wS" id="SP0-oE-93Q"/>
                                     </connections>
@@ -211,6 +216,9 @@
                                 <toolbarItem reference="Zqe-BE-ZNC"/>
                                 <toolbarItem reference="Oz4-9F-bPz"/>
                             </defaultToolbarItems>
+                            <connections>
+                                <outlet property="delegate" destination="B8D-0N-5wS" id="fIW-0A-W5l"/>
+                            </connections>
                         </toolbar>
                         <connections>
                             <outlet property="delegate" destination="B8D-0N-5wS" id="98r-iN-zZc"/>
@@ -240,6 +248,7 @@
         </scene>
     </scenes>
     <resources>
+        <image name="ladybug" catalog="system" width="18" height="18"/>
         <image name="square.and.arrow.up" catalog="system" width="15" height="18"/>
     </resources>
 </document>

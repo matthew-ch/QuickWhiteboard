@@ -32,3 +32,26 @@ final class WindowController: NSWindowController {
         
     }
 }
+
+extension WindowController: NSWindowDelegate {
+    func windowDidChangeScreen(_ notification: Notification) {
+        window?.contentViewController?.view.needsDisplay = true
+    }
+}
+
+extension WindowController: NSToolbarDelegate {
+    func toolbarDefaultItemIdentifiers(_ toolbar: NSToolbar) -> [NSToolbarItem.Identifier] {
+#if DEBUG
+        return [
+            .flexibleSpace,
+            NSToolbarItem.Identifier.init("app.debug"),
+            NSToolbarItem.Identifier.init("app.export"),
+        ]
+#else
+        return [
+            .flexibleSpace,
+            NSToolbarItem.Identifier.init("app.export"),
+        ]
+#endif
+    }
+}
