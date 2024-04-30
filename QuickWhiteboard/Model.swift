@@ -8,18 +8,25 @@
 import Foundation
 import CoreGraphics
 import Metal
+import MetalKit
+
+protocol RenderItem: AnyObject {
+    var boundingRect: CGRect { get }
+}
 
 struct PointSample {
     let location: SIMD2<Float>
 }
 
-final class DrawingPath {
+final class DrawingPath: RenderItem {
     private(set) var points: [PointSample] = []
     
     let color: SIMD4<Float>
     let strokeWidth: Float
     
     private(set) var boundingRect: CGRect = CGRect.zero
+    
+    private var vertexBuffer: MTLBuffer?
     
     init(color: CGColor, strokeWidth: CGFloat) {
         assert(color.colorSpace?.model == .rgb && color.numberOfComponents >= 3)
@@ -47,10 +54,64 @@ final class DrawingPath {
             y_top = max(location.y, y_top)
         }
         boundingRect = CGRect(x: x_left, y: y_bottom, width: x_right - x_left, height: y_top - y_bottom)
+        vertexBuffer = nil
     }
     
-    func uploadToBuffer(device: MTLDevice) -> MTLBuffer {
-        let buffer = device.makeBuffer(bytes: &points, length: MemoryLayout<PointSample>.size * points.count)!
-        return buffer
+    func upload(to device: MTLDevice) -> MTLBuffer {
+        if vertexBuffer == nil {
+            vertexBuffer = device.makeBuffer(bytes: &points, length: MemoryLayout<PointSample>.size * points.count)!
+        }
+        return self.vertexBuffer!
     }
+}
+
+final class ImageRect: RenderItem {
+    private(set) var image: CGImage
+    var boundingRect: CGRect
+    
+    private var texture: MTLTexture?
+    private var vertexBuffer: MTLBuffer?
+    private var uvBuffer: MTLBuffer?
+    
+    static var textureLoader: MTKTextureLoader!
+    static let uvs: [SIMD2<Float>] = [
+        .init(0.0, 1.0),
+        .init(1.0, 0.0),
+        .init(0.0, 0.0),
+        .init(1.0, 0.0),
+        .init(0.0, 1.0),
+        .init(1.0, 1.0),
+    ]
+    
+    init(image: CGImage, boundingRect: CGRect) {
+        self.image = image
+        self.boundingRect = boundingRect
+    }
+
+    func upload(to device: MTLDevice) -> (texture: MTLTexture, vertexBuffer: MTLBuffer, uvBuffer: MTLBuffer) {
+        if Self.textureLoader == nil {
+            Self.textureLoader = MTKTextureLoader(device: device)
+        }
+        if texture == nil {
+            texture = try! Self.textureLoader.newTexture(cgImage: image, options: [.allocateMipmaps: NSNumber(booleanLiteral: false), .textureStorageMode: NSNumber(value: MTLStorageMode.private.rawValue), .textureUsage: NSNumber(value: MTLTextureUsage.shaderRead.rawValue)])
+        }
+        if vertexBuffer == nil {
+            let origin = boundingRect.origin.float2
+            let size = boundingRect.size.float2
+            let vertexes: [SIMD2<Float>] = [
+                origin,
+                origin + size,
+                .init(origin.x, origin.y + size.y),
+                origin + size,
+                origin,
+                .init(origin.x + size.x, origin.y)
+            ]
+            vertexBuffer = device.makeBuffer(bytes: vertexes, length: MemoryLayout<SIMD2<Float>>.size * 6)
+        }
+        if uvBuffer == nil {
+            uvBuffer = device.makeBuffer(bytes: Self.uvs, length: MemoryLayout<SIMD2<Float>>.size * 6)
+        }
+        return (texture!, vertexBuffer!, uvBuffer!)
+    }
+    
 }

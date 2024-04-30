@@ -31,8 +31,8 @@ fragment float4 simpleFragment(const constant float4& color [[ buffer(0) ]]) {
     return color;
 }
 
-vertex VertexWithUV textureVertex(const constant float4 &frameRect [[ buffer(1) ]],
-                                  const device float2* vertexArray [[ buffer(0) ]],
+vertex VertexWithUV textureVertex(const constant float4 &frameRect [[ buffer(0) ]],
+                                  const device float2* vertexArray [[ buffer(1) ]],
                                   const device float2* uv_array [[ buffer(2) ]],
                                   unsigned int vid [[ vertex_id ]]) {
     return VertexWithUV {

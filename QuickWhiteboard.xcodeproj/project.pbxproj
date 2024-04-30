@@ -18,6 +18,8 @@
 		C9B1C76C2BDA802A0013C568 /* CoreGraphics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C9B1C76B2BDA802A0013C568 /* CoreGraphics.framework */; };
 		C9B1C76E2BDA900F0013C568 /* Renderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9B1C76D2BDA900F0013C568 /* Renderer.swift */; };
 		C9B1C7702BDA91660013C568 /* Shader.metal in Sources */ = {isa = PBXBuildFile; fileRef = C9B1C76F2BDA91660013C568 /* Shader.metal */; };
+		C9CC709C2BE13001001C0351 /* CGExtension.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9CC709B2BE13001001C0351 /* CGExtension.swift */; };
+		C9CC709E2BE14874001C0351 /* CanvasView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9CC709D2BE14874001C0351 /* CanvasView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -34,6 +36,8 @@
 		C9B1C76B2BDA802A0013C568 /* CoreGraphics.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreGraphics.framework; path = System/Library/Frameworks/CoreGraphics.framework; sourceTree = SDKROOT; };
 		C9B1C76D2BDA900F0013C568 /* Renderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Renderer.swift; sourceTree = "<group>"; };
 		C9B1C76F2BDA91660013C568 /* Shader.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = Shader.metal; sourceTree = "<group>"; };
+		C9CC709B2BE13001001C0351 /* CGExtension.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CGExtension.swift; sourceTree = "<group>"; };
+		C9CC709D2BE14874001C0351 /* CanvasView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CanvasView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -72,6 +76,7 @@
 			children = (
 				C9B1C7532BD92A6F0013C568 /* AppDelegate.swift */,
 				C9B1C7552BD92A6F0013C568 /* ViewController.swift */,
+				C9CC709D2BE14874001C0351 /* CanvasView.swift */,
 				C9B1C76D2BDA900F0013C568 /* Renderer.swift */,
 				C9B1C7572BD92A700013C568 /* Assets.xcassets */,
 				C9B1C7592BD92A700013C568 /* Main.storyboard */,
@@ -79,6 +84,7 @@
 				C9B1C7622BDA6EC30013C568 /* WindowController.swift */,
 				C9B1C7692BDA79160013C568 /* Model.swift */,
 				C9B1C76F2BDA91660013C568 /* Shader.metal */,
+				C9CC709B2BE13001001C0351 /* CGExtension.swift */,
 			);
 			path = QuickWhiteboard;
 			sourceTree = "<group>";
@@ -163,7 +169,9 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C9CC709C2BE13001001C0351 /* CGExtension.swift in Sources */,
 				C9B1C7702BDA91660013C568 /* Shader.metal in Sources */,
+				C9CC709E2BE14874001C0351 /* CanvasView.swift in Sources */,
 				C9B1C7562BD92A6F0013C568 /* ViewController.swift in Sources */,
 				C9B1C7632BDA6EC30013C568 /* WindowController.swift in Sources */,
 				C9B1C7542BD92A6F0013C568 /* AppDelegate.swift in Sources */,

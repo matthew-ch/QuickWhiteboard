@@ -34,23 +34,33 @@ final class Renderer {
         texturePipelineState = try! device.makeRenderPipelineState(descriptor: pipelineDescriptor)
     }
     
-    func render(in view: MTKView, paths: [DrawingPath], viewport: CGRect, debug: Bool = false) {
+    func render(in view: MTKView, items: [RenderItem], viewport: CGRect, debug: Bool = false) {
         guard let renderPassDescriptor = view.currentRenderPassDescriptor else {
             return;
         }
         let commandBuffer = commandQueue.makeCommandBuffer()!
         let encoder = commandBuffer.makeRenderCommandEncoder(descriptor: renderPassDescriptor)!
-        encoder.setRenderPipelineState(simplePipelineState)
         var frameRect = SIMD4(Float(viewport.minX), Float(viewport.minY), Float(viewport.width), Float(viewport.height))
         encoder.setVertexBytes(&frameRect, length: MemoryLayout<SIMD4<Float>>.size, index: 0)
-        for path in paths {
-            if !viewport.intersects(path.boundingRect) {
+        for item in items {
+            if !viewport.intersects(item.boundingRect) {
                 continue
             }
-            encoder.setVertexBuffer(path.uploadToBuffer(device: device), offset: 0, index: 1)
-            var color = path.color
-            encoder.setFragmentBytes(&color, length: MemoryLayout<SIMD4<Float>>.size, index: 0)
-            encoder.drawPrimitives(type: debug ? .point : .lineStrip, vertexStart: 0, vertexCount: path.points.count)
+            if let path = item as? DrawingPath {
+                encoder.setRenderPipelineState(simplePipelineState)
+                let vertexBuffer = path.upload(to: device)
+                encoder.setVertexBuffer(vertexBuffer, offset: 0, index: 1)
+                var color = path.color
+                encoder.setFragmentBytes(&color, length: MemoryLayout<SIMD4<Float>>.size, index: 0)
+                encoder.drawPrimitives(type: debug ? .point : .lineStrip, vertexStart: 0, vertexCount: path.points.count)
+            } else if let ir = item as? ImageRect {
+                encoder.setRenderPipelineState(texturePipelineState)
+                let (texture, vertexBuffer, uvBuffer) = ir.upload(to: device)
+                encoder.setVertexBuffer(vertexBuffer, offset: 0, index: 1)
+                encoder.setVertexBuffer(uvBuffer, offset: 0, index: 2)
+                encoder.setFragmentTexture(texture, index: 0)
+                encoder.drawPrimitives(type: .triangle, vertexStart: 0, vertexCount: 6)
+            }
         }
         encoder.endEncoding()
         commandBuffer.present(view.currentDrawable!)

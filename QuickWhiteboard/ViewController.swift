@@ -7,10 +7,11 @@
 
 import Cocoa
 import MetalKit
+import UniformTypeIdentifiers
 
 class ViewController: NSViewController {
     
-    private var paths: [DrawingPath] = []
+    private var items: [RenderItem] = []
     private var renderer: Renderer!
     private var origin: CGPoint = .zero
     private var pendingPath: DrawingPath?
@@ -19,6 +20,18 @@ class ViewController: NSViewController {
     private var strokeWidth = 2.0
     
     private var debug = false
+    
+    private lazy var destinationURL: URL = {
+        let destinationURL = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent("Drops")
+        try? FileManager.default.createDirectory(at: destinationURL, withIntermediateDirectories: true, attributes: nil)
+        return destinationURL
+    }()
+    
+    private lazy var workQueue: OperationQueue = {
+        let providerQueue = OperationQueue()
+        providerQueue.qualityOfService = .userInitiated
+        return providerQueue
+    }()
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -32,6 +45,9 @@ class ViewController: NSViewController {
         view.delegate = self
         view.isPaused = true
         view.enableSetNeedsDisplay = true
+        
+        view.registerForDraggedTypes(NSFilePromiseReceiver.readableDraggedTypes.map { NSPasteboard.PasteboardType($0) })
+        view.registerForDraggedTypes([NSPasteboard.PasteboardType.fileURL])
     }
     
     override func viewDidAppear() {
@@ -73,7 +89,7 @@ class ViewController: NSViewController {
     
     override func mouseUp(with event: NSEvent) {
         if let pendingPath = pendingPath {
-            paths.append(pendingPath)
+            items.append(pendingPath)
             self.pendingPath = nil
         }
     }
@@ -93,16 +109,66 @@ class ViewController: NSViewController {
         debug.toggle()
         view.needsDisplay = true
     }
+    
+    func addImage(_ image: NSImage) {
+        if let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil) {
+            let imageItem = ImageRect(image: cgImage, boundingRect: .init(origin: origin, size: .init(width: cgImage.width, height: cgImage.height)))
+            items.append(imageItem)
+            view.needsDisplay = true
+        }
+    }
+    
+    private func handleFile(url: URL) {
+        if let image = NSImage(contentsOf: url) {
+            DispatchQueue.main.async {
+                self.addImage(image)
+            }
+        }
+    }
+}
+
+extension ViewController: NSDraggingDestination {
+    func draggingEntered(_ sender: any NSDraggingInfo) -> NSDragOperation {
+        return sender.draggingSourceOperationMask.intersection([.copy])
+    }
+    
+    func performDragOperation(_ sender: any NSDraggingInfo) -> Bool {
+        let supportedClasses = [
+            NSFilePromiseReceiver.self,
+            NSURL.self
+        ]
+        let acceptedTypes = [UTType.image.identifier]
+        let searchOptions: [NSPasteboard.ReadingOptionKey: Any] = [
+            .urlReadingFileURLsOnly: true,
+            .urlReadingContentsConformToTypes: acceptedTypes
+        ]
+        sender.enumerateDraggingItems(for: nil, classes: supportedClasses, searchOptions: searchOptions) { draggingItem, _, _ in
+            switch draggingItem.item {
+            case let filePromiseReceiver as NSFilePromiseReceiver:
+                filePromiseReceiver.receivePromisedFiles(atDestination: self.destinationURL, operationQueue: self.workQueue) { fileUrl, error in
+                    if error == nil {
+                        self.handleFile(url: fileUrl)
+                    }
+                }
+            case let fileURL as URL:
+                self.handleFile(url: fileURL)
+            default:
+                break
+            }
+        }
+        return true
+    }
 }
 
 extension ViewController: MTKViewDelegate {
+
     func mtkView(_ view: MTKView, drawableSizeWillChange size: CGSize) {
         // empty
     }
     
     func draw(in view: MTKView) {
         let pendingPaths = pendingPath.map{ [$0] } ?? []
-        renderer.render(in: view, paths: paths + pendingPaths, viewport: CGRect(origin: origin, size: view.bounds.size), debug: debug)
+        renderer.render(in: view, items: items + pendingPaths, viewport: CGRect(origin: origin, size: view.bounds.size), debug: debug)
     }
     
     
