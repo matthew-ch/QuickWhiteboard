@@ -29,6 +29,11 @@ final class Renderer {
         pipelineDescriptor.fragmentFunction = defaultLibrary.makeFunction(name: "simpleFragment")
         simplePipelineState = try! device.makeRenderPipelineState(descriptor: pipelineDescriptor)
         
+        pipelineDescriptor.colorAttachments[0].isBlendingEnabled = true
+        pipelineDescriptor.colorAttachments[0].destinationAlphaBlendFactor = .one
+        pipelineDescriptor.colorAttachments[0].destinationRGBBlendFactor = .oneMinusSourceAlpha
+        pipelineDescriptor.colorAttachments[0].sourceAlphaBlendFactor = .zero
+        pipelineDescriptor.colorAttachments[0].sourceRGBBlendFactor = .sourceAlpha
         pipelineDescriptor.vertexFunction = defaultLibrary.makeFunction(name: "textureVertex")
         pipelineDescriptor.fragmentFunction = defaultLibrary.makeFunction(name: "textureFragment")
         texturePipelineState = try! device.makeRenderPipelineState(descriptor: pipelineDescriptor)

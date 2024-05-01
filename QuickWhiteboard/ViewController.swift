@@ -20,6 +20,7 @@ class ViewController: NSViewController {
     private var strokeWidth = 2.0
     
     private var debug = false
+    private var previousViewSize: CGSize = .zero
     
     private lazy var destinationURL: URL = {
         let destinationURL = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent("Drops")
@@ -74,12 +75,13 @@ class ViewController: NSViewController {
         let factor = event.hasPreciseScrollingDeltas ? 1.0 : 5.0
         origin.x -= event.scrollingDeltaX * factor
         origin.y += event.scrollingDeltaY * factor
+        origin = origin.rounded
         view.needsDisplay = true
     }
     
     private func convertEventLocation(_ location: NSPoint) -> CGPoint {
         let point = view.convert(location, from: nil)
-        return CGPoint(x: point.x + origin.x, y: point.y + origin.y)
+        return CGPoint(x: point.x + origin.x, y: point.y + origin.y).rounded
     }
     
     override func mouseDown(with event: NSEvent) {
@@ -118,7 +120,8 @@ class ViewController: NSViewController {
     
     private func addImage(_ image: NSImage) {
         if let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil) {
-            let imageItem = ImageRect(image: cgImage, boundingRect: .init(origin: origin, size: .init(width: cgImage.width, height: cgImage.height)))
+            let imageOrigin = CGPoint(x: origin.x + view.bounds.midX - CGFloat(cgImage.width) / 2.0, y: origin.y + view.bounds.midY - CGFloat(cgImage.height) / 2.0).rounded
+            let imageItem = ImageRect(image: cgImage, boundingRect: .init(origin: imageOrigin, size: .init(width: cgImage.width, height: cgImage.height)))
             items.append(imageItem)
             view.needsDisplay = true
         }
@@ -130,6 +133,15 @@ class ViewController: NSViewController {
                 self.addImage(image)
             }
         }
+    }
+    
+    func viewHasSetNewSize(_ newSize: CGSize) {
+        if previousViewSize != .zero {
+            origin.x -= (newSize.width - previousViewSize.width) / 2.0
+            origin.y -= (newSize.height - previousViewSize.height) / 2.0
+            origin = origin.rounded
+        }
+        previousViewSize = newSize
     }
 }
 

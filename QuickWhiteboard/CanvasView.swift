@@ -13,6 +13,11 @@ class CanvasView: MTKView {
     var viewController: ViewController? {
         delegate as? ViewController
     }
+    
+    override func setFrameSize(_ newSize: NSSize) {
+        super.setFrameSize(newSize)
+        viewController?.viewHasSetNewSize(newSize)
+    }
 
     override func draggingEntered(_ sender: any NSDraggingInfo) -> NSDragOperation {
         if let viewController = viewController {
