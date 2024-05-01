@@ -110,7 +110,13 @@ class ViewController: NSViewController {
         view.needsDisplay = true
     }
     
-    func addImage(_ image: NSImage) {
+    @IBAction func paste(_ sender: Any) {
+        if let images = NSPasteboard.general.readObjects(forClasses: [NSImage.self]), let image = images.first as? NSImage {
+            addImage(image)
+        }
+    }
+    
+    private func addImage(_ image: NSImage) {
         if let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil) {
             let imageItem = ImageRect(image: cgImage, boundingRect: .init(origin: origin, size: .init(width: cgImage.width, height: cgImage.height)))
             items.append(imageItem)
@@ -124,6 +130,15 @@ class ViewController: NSViewController {
                 self.addImage(image)
             }
         }
+    }
+}
+
+extension ViewController: NSMenuItemValidation {
+    func validateMenuItem(_ menuItem: NSMenuItem) -> Bool {
+        if menuItem.action == #selector(paste(_:)) {
+            return NSPasteboard.general.canReadObject(forClasses: [NSImage.self])
+        }
+        return true
     }
 }
 
@@ -142,7 +157,7 @@ extension ViewController: NSDraggingDestination {
             .urlReadingFileURLsOnly: true,
             .urlReadingContentsConformToTypes: acceptedTypes
         ]
-        sender.enumerateDraggingItems(for: nil, classes: supportedClasses, searchOptions: searchOptions) { draggingItem, _, _ in
+        sender.enumerateDraggingItems(for: nil, classes: supportedClasses, searchOptions: searchOptions) { draggingItem, _, stop in
             switch draggingItem.item {
             case let filePromiseReceiver as NSFilePromiseReceiver:
                 filePromiseReceiver.receivePromisedFiles(atDestination: self.destinationURL, operationQueue: self.workQueue) { fileUrl, error in
@@ -150,8 +165,10 @@ extension ViewController: NSDraggingDestination {
                         self.handleFile(url: fileUrl)
                     }
                 }
+                stop.pointee = true
             case let fileURL as URL:
                 self.handleFile(url: fileURL)
+                stop.pointee = true
             default:
                 break
             }

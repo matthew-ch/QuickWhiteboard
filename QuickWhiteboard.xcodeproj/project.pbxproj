@@ -75,16 +75,16 @@
 			isa = PBXGroup;
 			children = (
 				C9B1C7532BD92A6F0013C568 /* AppDelegate.swift */,
-				C9B1C7552BD92A6F0013C568 /* ViewController.swift */,
-				C9CC709D2BE14874001C0351 /* CanvasView.swift */,
-				C9B1C76D2BDA900F0013C568 /* Renderer.swift */,
 				C9B1C7572BD92A700013C568 /* Assets.xcassets */,
-				C9B1C7592BD92A700013C568 /* Main.storyboard */,
-				C9B1C75C2BD92A700013C568 /* QuickWhiteboard.entitlements */,
-				C9B1C7622BDA6EC30013C568 /* WindowController.swift */,
-				C9B1C7692BDA79160013C568 /* Model.swift */,
-				C9B1C76F2BDA91660013C568 /* Shader.metal */,
+				C9CC709D2BE14874001C0351 /* CanvasView.swift */,
 				C9CC709B2BE13001001C0351 /* CGExtension.swift */,
+				C9B1C7592BD92A700013C568 /* Main.storyboard */,
+				C9B1C7692BDA79160013C568 /* Model.swift */,
+				C9B1C75C2BD92A700013C568 /* QuickWhiteboard.entitlements */,
+				C9B1C76D2BDA900F0013C568 /* Renderer.swift */,
+				C9B1C76F2BDA91660013C568 /* Shader.metal */,
+				C9B1C7552BD92A6F0013C568 /* ViewController.swift */,
+				C9B1C7622BDA6EC30013C568 /* WindowController.swift */,
 			);
 			path = QuickWhiteboard;
 			sourceTree = "<group>";

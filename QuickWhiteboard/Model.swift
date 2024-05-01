@@ -93,7 +93,12 @@ final class ImageRect: RenderItem {
             Self.textureLoader = MTKTextureLoader(device: device)
         }
         if texture == nil {
-            texture = try! Self.textureLoader.newTexture(cgImage: image, options: [.allocateMipmaps: NSNumber(booleanLiteral: false), .textureStorageMode: NSNumber(value: MTLStorageMode.private.rawValue), .textureUsage: NSNumber(value: MTLTextureUsage.shaderRead.rawValue)])
+            texture = try! Self.textureLoader.newTexture(cgImage: image, options: [
+                .allocateMipmaps: NSNumber(booleanLiteral: false),
+                .textureStorageMode: NSNumber(value: MTLStorageMode.private.rawValue),
+                .textureUsage: NSNumber(value: MTLTextureUsage.shaderRead.rawValue),
+                .SRGB: NSNumber(booleanLiteral: false),
+            ])
         }
         if vertexBuffer == nil {
             let origin = boundingRect.origin.float2
