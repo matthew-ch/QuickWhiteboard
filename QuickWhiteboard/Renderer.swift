@@ -47,24 +47,26 @@ final class Renderer {
         let encoder = commandBuffer.makeRenderCommandEncoder(descriptor: renderPassDescriptor)!
         var frameRect = SIMD4(Float(viewport.minX), Float(viewport.minY), Float(viewport.width), Float(viewport.height))
         encoder.setVertexBytes(&frameRect, length: MemoryLayout<SIMD4<Float>>.size, index: 0)
+        encoder.setTriangleFillMode(debug ? .lines : .fill)
         for item in items {
             if !viewport.intersects(item.boundingRect) {
                 continue
             }
             if let path = item as? DrawingPath {
                 encoder.setRenderPipelineState(simplePipelineState)
-                let vertexBuffer = path.upload(to: device)
+                let (vertexBuffer, vertexCount) = path.upload(to: device)
                 encoder.setVertexBuffer(vertexBuffer, offset: 0, index: 1)
                 var color = path.color
                 encoder.setFragmentBytes(&color, length: MemoryLayout<SIMD4<Float>>.size, index: 0)
-                encoder.drawPrimitives(type: debug ? .point : .lineStrip, vertexStart: 0, vertexCount: path.points.count)
+                
+                encoder.drawPrimitives(type: .triangle, vertexStart: 0, vertexCount: vertexCount)
             } else if let ir = item as? ImageRect {
                 encoder.setRenderPipelineState(texturePipelineState)
-                let (texture, vertexBuffer, uvBuffer) = ir.upload(to: device)
+                let (texture, vertexBuffer, uvBuffer, vertexCount) = ir.upload(to: device)
                 encoder.setVertexBuffer(vertexBuffer, offset: 0, index: 1)
                 encoder.setVertexBuffer(uvBuffer, offset: 0, index: 2)
                 encoder.setFragmentTexture(texture, index: 0)
-                encoder.drawPrimitives(type: .triangle, vertexStart: 0, vertexCount: 6)
+                encoder.drawPrimitives(type: .triangle, vertexStart: 0, vertexCount: vertexCount)
             }
         }
         encoder.endEncoding()

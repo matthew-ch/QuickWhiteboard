@@ -92,6 +92,7 @@ class ViewController: NSViewController {
     override func mouseUp(with event: NSEvent) {
         if let pendingPath = pendingPath {
             items.append(pendingPath)
+            view.needsDisplay = true
             self.pendingPath = nil
         }
     }
