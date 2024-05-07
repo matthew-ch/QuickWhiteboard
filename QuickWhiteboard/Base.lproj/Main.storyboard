@@ -192,7 +192,7 @@
         <scene sceneID="R2V-B0-nI4">
             <objects>
                 <windowController storyboardIdentifier="WindowController" id="B8D-0N-5wS" customClass="WindowController" customModule="QuickWhiteboard" customModuleProvider="target" sceneMemberID="viewController">
-                    <window key="window" title="QuickWhiteboard" allowsToolTipsWhenApplicationIsInactive="NO" autorecalculatesKeyViewLoop="NO" releasedWhenClosed="NO" visibleAtLaunch="NO" animationBehavior="default" tabbingMode="disallowed" id="IQv-IB-iLA">
+                    <window key="window" title="QuickWhiteboard" allowsToolTipsWhenApplicationIsInactive="NO" autorecalculatesKeyViewLoop="NO" releasedWhenClosed="NO" visibleAtLaunch="NO" animationBehavior="default" tabbingMode="disallowed" toolbarStyle="expanded" id="IQv-IB-iLA">
                         <windowStyleMask key="styleMask" titled="YES" closable="YES" miniaturizable="YES" resizable="YES"/>
                         <windowPositionMask key="initialPositionMask" leftStrut="YES" rightStrut="YES" topStrut="YES" bottomStrut="YES"/>
                         <rect key="contentRect" x="196" y="240" width="800" height="600"/>
@@ -201,15 +201,61 @@
                             <allowedToolbarItems>
                                 <toolbarItem implicitItemIdentifier="NSToolbarSpaceItem" id="xTR-Eq-MuQ"/>
                                 <toolbarItem implicitItemIdentifier="NSToolbarFlexibleSpaceItem" id="Zqe-BE-ZNC"/>
-                                <toolbarItem implicitItemIdentifier="8A3AE7B3-E2EF-4860-ABC3-B89E94C83B1E" explicitItemIdentifier="app.debug" label="Toggle Debug" paletteLabel="Toggle Debug" tag="-1" image="ladybug" catalog="system" sizingBehavior="auto" id="ZWn-l2-Yap">
+                                <toolbarItem implicitItemIdentifier="8A3AE7B3-E2EF-4860-ABC3-B89E94C83B1E" explicitItemIdentifier="app.debug" label="Toggle Debug" paletteLabel="Toggle Debug" tag="-1" image="ladybug" catalog="system" bordered="YES" sizingBehavior="auto" id="ZWn-l2-Yap">
                                     <connections>
                                         <action selector="toggleDebug:" target="Oky-zY-oP4" id="RBQ-fM-LcY"/>
                                     </connections>
                                 </toolbarItem>
-                                <toolbarItem implicitItemIdentifier="F79B3E7F-A05D-4C4D-B086-C66A554A8AFB" explicitItemIdentifier="app.export" label="Export" paletteLabel="Export" tag="-1" image="square.and.arrow.up" catalog="system" sizingBehavior="auto" id="Oz4-9F-bPz">
+                                <toolbarItem implicitItemIdentifier="F79B3E7F-A05D-4C4D-B086-C66A554A8AFB" explicitItemIdentifier="app.export" label="Export" paletteLabel="Export" tag="-1" image="square.and.arrow.up" catalog="system" bordered="YES" sizingBehavior="auto" id="Oz4-9F-bPz">
                                     <connections>
                                         <action selector="onExport:" target="B8D-0N-5wS" id="SP0-oE-93Q"/>
                                     </connections>
+                                </toolbarItem>
+                                <toolbarItem implicitItemIdentifier="E5A56675-1702-407F-95C8-5A3F452C745F" explicitItemIdentifier="app.strokeWidth" label="Stroke Width" paletteLabel="Stroke Width" tag="-1" sizingBehavior="auto" id="iNf-LF-YX9">
+                                    <nil key="toolTip"/>
+                                    <customView key="view" id="k7E-W5-3fy">
+                                        <rect key="frame" x="0.0" y="14" width="96" height="0.0"/>
+                                        <autoresizingMask key="autoresizingMask" flexibleMinX="YES" flexibleMaxX="YES" flexibleMinY="YES" flexibleMaxY="YES"/>
+                                        <subviews>
+                                            <slider verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="cwF-Dl-5sU">
+                                                <rect key="frame" x="-2" y="-2" width="100" height="28"/>
+                                                <constraints>
+                                                    <constraint firstAttribute="height" constant="24" id="MaT-hS-QaQ"/>
+                                                    <constraint firstAttribute="width" constant="96" id="cUD-F6-HsL"/>
+                                                </constraints>
+                                                <sliderCell key="cell" controlSize="mini" state="on" alignment="left" minValue="1" maxValue="32" doubleValue="2" tickMarkPosition="above" sliderType="linear" id="9hD-Bx-4ye"/>
+                                            </slider>
+                                        </subviews>
+                                        <constraints>
+                                            <constraint firstItem="cwF-Dl-5sU" firstAttribute="leading" secondItem="k7E-W5-3fy" secondAttribute="leading" id="Kaq-TJ-IKj"/>
+                                            <constraint firstAttribute="trailing" secondItem="cwF-Dl-5sU" secondAttribute="trailing" id="OyL-Lq-wTQ"/>
+                                            <constraint firstAttribute="bottom" secondItem="cwF-Dl-5sU" secondAttribute="bottom" id="fJZ-KI-fex"/>
+                                            <constraint firstItem="cwF-Dl-5sU" firstAttribute="top" secondItem="k7E-W5-3fy" secondAttribute="top" id="jKo-Rc-ujK"/>
+                                        </constraints>
+                                    </customView>
+                                </toolbarItem>
+                                <toolbarItem implicitItemIdentifier="0693A143-98C2-4D8B-9350-CC68D4D48FCE" explicitItemIdentifier="app.color" label="Color" paletteLabel="Color" tag="-1" sizingBehavior="auto" id="dW2-T2-FVb">
+                                    <nil key="toolTip"/>
+                                    <customView key="view" id="PHU-P4-qEX">
+                                        <rect key="frame" x="0.0" y="14" width="36" height="18"/>
+                                        <autoresizingMask key="autoresizingMask" flexibleMinX="YES" flexibleMaxX="YES" flexibleMinY="YES" flexibleMaxY="YES"/>
+                                        <subviews>
+                                            <colorWell translatesAutoresizingMaskIntoConstraints="NO" id="Y1p-La-vvy">
+                                                <rect key="frame" x="-3" y="-2" width="42" height="22"/>
+                                                <constraints>
+                                                    <constraint firstAttribute="height" constant="18" id="1Yj-c8-YyF"/>
+                                                    <constraint firstAttribute="width" constant="36" id="HVi-kL-z8a"/>
+                                                </constraints>
+                                                <color key="color" red="0.05813049898" green="0.055541899059999997" blue="1" alpha="1" colorSpace="calibratedRGB"/>
+                                            </colorWell>
+                                        </subviews>
+                                        <constraints>
+                                            <constraint firstItem="Y1p-La-vvy" firstAttribute="leading" secondItem="PHU-P4-qEX" secondAttribute="leading" id="DNn-Wa-1IF"/>
+                                            <constraint firstAttribute="bottom" secondItem="Y1p-La-vvy" secondAttribute="bottom" id="UKq-nc-Z4c"/>
+                                            <constraint firstItem="Y1p-La-vvy" firstAttribute="top" secondItem="PHU-P4-qEX" secondAttribute="top" id="VS3-mq-iOG"/>
+                                            <constraint firstAttribute="trailing" secondItem="Y1p-La-vvy" secondAttribute="trailing" id="ufw-Dd-H5X"/>
+                                        </constraints>
+                                    </customView>
                                 </toolbarItem>
                             </allowedToolbarItems>
                             <defaultToolbarItems>
@@ -225,6 +271,8 @@
                         </connections>
                     </window>
                     <connections>
+                        <outlet property="colorWell" destination="Y1p-La-vvy" id="eLv-7Y-lJ4"/>
+                        <outlet property="swSlider" destination="cwF-Dl-5sU" id="8Me-qT-agP"/>
                         <outlet property="toolbar" destination="Gg4-E5-oZy" id="7TY-pW-vpQ"/>
                         <segue destination="XfG-lQ-9wD" kind="relationship" relationship="window.shadowedContentViewController" id="cq2-FE-JQM"/>
                     </connections>

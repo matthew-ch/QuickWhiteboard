@@ -16,8 +16,17 @@ class ViewController: NSViewController {
     private var origin: CGPoint = .zero
     private var pendingPath: DrawingPath?
     
-    private var color: CGColor = .init(red: 0.0, green: 0.0, blue: 0.0, alpha: 1.0)
-    private var strokeWidth = 2.0
+    private var windowController: WindowController! {
+        self.view.window!.windowController as? WindowController
+    }
+    
+    private var color: CGColor {
+        return windowController.colorWell.color.usingColorSpace(.sRGB)!.cgColor
+    }
+
+    private var strokeWidth: CGFloat {
+        return CGFloat(windowController.swSlider.integerValue)
+    }
     
     private var debug = false
     private var previousViewSize: CGSize = .zero

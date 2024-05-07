@@ -7,6 +7,13 @@
 
 import Cocoa
 
+extension NSToolbarItem.Identifier {
+    static let appDebug = Self.init("app.debug")
+    static let appExport = Self.init("app.export")
+    static let appStrokeWidth = Self.init("app.strokeWidth")
+    static let appColor = Self.init("app.color")
+}
+
 final class WindowController: NSWindowController {
     
     static let identifier = "WindowController"
@@ -17,15 +24,20 @@ final class WindowController: NSWindowController {
     }
 
     @IBOutlet weak var toolbar: NSToolbar!
-
+    @IBOutlet weak var swSlider: NSSlider!
+    @IBOutlet weak var colorWell: NSColorWell!
+    
     override func windowDidLoad() {
         super.windowDidLoad()
     
         // Implement this method to handle any initialization after your window controller's window has been loaded from its nib file.
+        if #available(macOS 14.0, *) {
+            colorWell.supportsAlpha = false
+        }
     }
     
-    func viewController() -> ViewController {
-        self.contentViewController as! ViewController
+    private var viewController: ViewController! {
+        self.contentViewController as? ViewController
     }
 
     @IBAction func onExport(_ sender: Any) {
@@ -41,17 +53,23 @@ extension WindowController: NSWindowDelegate {
 
 extension WindowController: NSToolbarDelegate {
     func toolbarDefaultItemIdentifiers(_ toolbar: NSToolbar) -> [NSToolbarItem.Identifier] {
+        var identifiers: [NSToolbarItem.Identifier] = [
+            .space,
+            .appStrokeWidth,
+            .space,
+            .appColor,
+            .flexibleSpace,
+        ]
 #if DEBUG
-        return [
-            .flexibleSpace,
-            NSToolbarItem.Identifier.init("app.debug"),
-            NSToolbarItem.Identifier.init("app.export"),
-        ]
-#else
-        return [
-            .flexibleSpace,
-            NSToolbarItem.Identifier.init("app.export"),
-        ]
+        identifiers.append(contentsOf: [
+            .appDebug,
+            .space
+        ])
 #endif
+        identifiers.append(contentsOf: [
+            .appExport,
+            .space,
+        ])
+        return identifiers
     }
 }
