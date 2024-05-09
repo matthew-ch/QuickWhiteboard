@@ -197,6 +197,7 @@
                         <windowPositionMask key="initialPositionMask" leftStrut="YES" rightStrut="YES" topStrut="YES" bottomStrut="YES"/>
                         <rect key="contentRect" x="196" y="240" width="800" height="600"/>
                         <rect key="screenRect" x="0.0" y="0.0" width="1680" height="1027"/>
+                        <value key="minSize" type="size" width="800" height="600"/>
                         <toolbar key="toolbar" implicitIdentifier="E77638E9-3A90-451B-B4EC-BE69CC11BB6A" autosavesConfiguration="NO" allowsUserCustomization="NO" displayMode="iconAndLabel" sizeMode="regular" id="Gg4-E5-oZy">
                             <allowedToolbarItems>
                                 <toolbarItem implicitItemIdentifier="NSToolbarSpaceItem" id="xTR-Eq-MuQ"/>
@@ -215,7 +216,7 @@
                                     <nil key="toolTip"/>
                                     <customView key="view" id="k7E-W5-3fy">
                                         <rect key="frame" x="0.0" y="14" width="96" height="0.0"/>
-                                        <autoresizingMask key="autoresizingMask" flexibleMinX="YES" flexibleMaxX="YES" flexibleMinY="YES" flexibleMaxY="YES"/>
+                                        <autoresizingMask key="autoresizingMask"/>
                                         <subviews>
                                             <slider verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="cwF-Dl-5sU">
                                                 <rect key="frame" x="-2" y="-2" width="100" height="28"/>
@@ -237,8 +238,8 @@
                                 <toolbarItem implicitItemIdentifier="0693A143-98C2-4D8B-9350-CC68D4D48FCE" explicitItemIdentifier="app.color" label="Color" paletteLabel="Color" tag="-1" sizingBehavior="auto" id="dW2-T2-FVb">
                                     <nil key="toolTip"/>
                                     <customView key="view" id="PHU-P4-qEX">
-                                        <rect key="frame" x="0.0" y="14" width="36" height="18"/>
-                                        <autoresizingMask key="autoresizingMask" flexibleMinX="YES" flexibleMaxX="YES" flexibleMinY="YES" flexibleMaxY="YES"/>
+                                        <rect key="frame" x="0.0" y="14" width="36" height="0.0"/>
+                                        <autoresizingMask key="autoresizingMask"/>
                                         <subviews>
                                             <colorWell translatesAutoresizingMaskIntoConstraints="NO" id="Y1p-La-vvy">
                                                 <rect key="frame" x="-3" y="-2" width="42" height="22"/>

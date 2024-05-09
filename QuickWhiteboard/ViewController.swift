@@ -78,6 +78,16 @@ class ViewController: NSViewController {
         }
     }
     
+    private func renderImage() -> NSImage {
+        let size = (self.view as! MTKView).drawableSize
+        let texture = renderer.renderOffscreen(of: size, items: items, viewport: CGRect(origin: origin, size: view.bounds.size))
+        let ciImage = CIImage(mtlTexture: texture, options: [.colorSpace: CGColorSpace(name: CGColorSpace.sRGB)!])!.transformed(by: .init(scaleX: 1, y: -1))
+        let context = CIContext()
+        let cgImage = context.createCGImage(ciImage, from: ciImage.extent, format: .RGBA8, colorSpace: CGColorSpace(name: CGColorSpace.sRGB))!
+        let image = NSImage(cgImage: cgImage, size: size)
+        return image
+    }
+    
     // MARK: event handling
 
     override func scrollWheel(with event: NSEvent) {
@@ -128,6 +138,13 @@ class ViewController: NSViewController {
         }
     }
     
+    @IBAction func copy(_ sender: Any) {
+        let image = renderImage()
+        let pasteboard = NSPasteboard.general
+        pasteboard.clearContents()
+        pasteboard.writeObjects([image])
+    }
+    
     private func addImage(_ image: NSImage) {
         if let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil) {
             let imageOrigin = CGPoint(x: origin.x + view.bounds.midX - CGFloat(cgImage.width) / 2.0, y: origin.y + view.bounds.midY - CGFloat(cgImage.height) / 2.0).rounded
@@ -152,6 +169,12 @@ class ViewController: NSViewController {
             origin = origin.rounded
         }
         previousViewSize = newSize
+    }
+    
+    func exportCanvas(_ sender: NSToolbarItem) {
+        let image = renderImage()
+        let toolbarButton = sender.value(forKey: "_view") as! NSView
+        NSSharingServicePicker(items: [image]).show(relativeTo: .zero, of: toolbarButton, preferredEdge: .minY)
     }
 }
 

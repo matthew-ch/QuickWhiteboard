@@ -40,8 +40,8 @@ final class WindowController: NSWindowController {
         self.contentViewController as? ViewController
     }
 
-    @IBAction func onExport(_ sender: Any) {
-        
+    @IBAction func onExport(_ sender: NSToolbarItem) {
+        viewController.exportCanvas(sender)
     }
 }
 

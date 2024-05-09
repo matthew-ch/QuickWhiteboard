@@ -45,9 +45,35 @@ final class Renderer {
         }
         let commandBuffer = commandQueue.makeCommandBuffer()!
         let encoder = commandBuffer.makeRenderCommandEncoder(descriptor: renderPassDescriptor)!
+        encoder.setTriangleFillMode(debug ? .lines : .fill)
+        render(with: encoder, items: items, viewport: viewport)
+        encoder.endEncoding()
+        commandBuffer.present(view.currentDrawable!)
+        commandBuffer.commit()
+    }
+    
+    func renderOffscreen(of size: CGSize, items: [RenderItem], viewport: CGRect) -> MTLTexture {
+        let textureDescriptor = MTLTextureDescriptor.texture2DDescriptor(pixelFormat: .bgra8Unorm, width: Int(size.width), height: Int(size.height), mipmapped: false)
+        textureDescriptor.usage = [.renderTarget, .shaderRead]
+        let texture = device.makeTexture(descriptor: textureDescriptor)!
+
+        let renderPassDescriptor = MTLRenderPassDescriptor()
+        renderPassDescriptor.colorAttachments[0].texture = texture
+        renderPassDescriptor.colorAttachments[0].clearColor = .init(red: 1.0, green: 1.0, blue: 1.0, alpha: 1.0)
+        renderPassDescriptor.colorAttachments[0].loadAction = .clear
+
+        let commandBuffer = commandQueue.makeCommandBuffer()!
+        let encoder = commandBuffer.makeRenderCommandEncoder(descriptor: renderPassDescriptor)!
+        render(with: encoder, items: items, viewport: viewport)
+        encoder.endEncoding()
+        commandBuffer.commit()
+        commandBuffer.waitUntilCompleted()
+        return texture
+    }
+    
+    private func render(with encoder: MTLRenderCommandEncoder, items: [RenderItem], viewport: CGRect) {
         var frameRect = SIMD4(Float(viewport.minX), Float(viewport.minY), Float(viewport.width), Float(viewport.height))
         encoder.setVertexBytes(&frameRect, length: MemoryLayout<SIMD4<Float>>.size, index: 0)
-        encoder.setTriangleFillMode(debug ? .lines : .fill)
         for item in items {
             if !viewport.intersects(item.boundingRect) {
                 continue
@@ -69,8 +95,5 @@ final class Renderer {
                 encoder.drawPrimitives(type: .triangle, vertexStart: 0, vertexCount: vertexCount)
             }
         }
-        encoder.endEncoding()
-        commandBuffer.present(view.currentDrawable!)
-        commandBuffer.commit()
     }
 }
