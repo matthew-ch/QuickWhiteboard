@@ -104,6 +104,9 @@
                                                 <action selector="paste:" target="Ady-hI-5gd" id="UvS-8e-Qdg"/>
                                             </connections>
                                         </menuItem>
+                                        <menuItem title="Import From Device" identifier="NSMenuItemImportFromDeviceIdentifier" id="1Mx-SP-8MU">
+                                            <modifierMask key="keyEquivalentModifierMask"/>
+                                        </menuItem>
                                     </items>
                                 </menu>
                             </menuItem>

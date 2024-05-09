@@ -43,6 +43,13 @@ final class WindowController: NSWindowController {
     @IBAction func onExport(_ sender: NSToolbarItem) {
         viewController.exportCanvas(sender)
     }
+    
+    override func validRequestor(forSendType sendType: NSPasteboard.PasteboardType?, returnType: NSPasteboard.PasteboardType?) -> Any? {
+        if let pasteboardType = returnType, NSImage.imageTypes.contains(pasteboardType.rawValue) {
+            return viewController
+        }
+        return super.validRequestor(forSendType: sendType, returnType: returnType)
+    }
 }
 
 extension WindowController: NSWindowDelegate {

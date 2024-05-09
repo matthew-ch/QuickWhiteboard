@@ -133,9 +133,7 @@ class ViewController: NSViewController {
     }
     
     @IBAction func paste(_ sender: Any) {
-        if let images = NSPasteboard.general.readObjects(forClasses: [NSImage.self]), let image = images.first as? NSImage {
-            addImage(image)
-        }
+        readImage(from: NSPasteboard.general)
     }
     
     @IBAction func copy(_ sender: Any) {
@@ -146,7 +144,9 @@ class ViewController: NSViewController {
     }
     
     private func addImage(_ image: NSImage) {
-        if let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil) {
+        let size = image.size
+        let cgContext = CGContext(data: nil, width: Int(size.width), height: Int(size.height), bitsPerComponent: 8, bytesPerRow: 0, space: CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: CGImageAlphaInfo.noneSkipFirst.rawValue)!
+        if let cgImage = image.cgImage(forProposedRect: nil, context: NSGraphicsContext(cgContext: cgContext, flipped: false), hints: nil) {
             let imageOrigin = CGPoint(x: origin.x + view.bounds.midX - CGFloat(cgImage.width) / 2.0, y: origin.y + view.bounds.midY - CGFloat(cgImage.height) / 2.0).rounded
             let imageItem = ImageRect(image: cgImage, boundingRect: .init(origin: imageOrigin, size: .init(width: cgImage.width, height: cgImage.height)))
             items.append(imageItem)
@@ -176,12 +176,34 @@ class ViewController: NSViewController {
         let toolbarButton = sender.value(forKey: "_view") as! NSView
         NSSharingServicePicker(items: [image]).show(relativeTo: .zero, of: toolbarButton, preferredEdge: .minY)
     }
+    
+    private func canReadImage(from pasteboard: NSPasteboard) -> Bool {
+        pasteboard.canReadObject(forClasses: [NSImage.self], options: [.urlReadingContentsConformToTypes: [UTType.image.identifier]])
+    }
+    
+    @discardableResult
+    private func readImage(from pasteboard: NSPasteboard) -> Bool {
+        if let images = pasteboard.readObjects(forClasses: [NSImage.self], options: [.urlReadingContentsConformToTypes: [UTType.image.identifier]]), let image = images.first as? NSImage {
+            addImage(image)
+            return true
+        }
+        return false
+    }
+}
+
+extension ViewController: NSServicesMenuRequestor {
+    func readSelection(from pboard: NSPasteboard) -> Bool {
+        guard canReadImage(from: pboard) else {
+            return false
+        }
+        return readImage(from: pboard)
+    }
 }
 
 extension ViewController: NSMenuItemValidation {
     func validateMenuItem(_ menuItem: NSMenuItem) -> Bool {
         if menuItem.action == #selector(paste(_:)) {
-            return NSPasteboard.general.canReadObject(forClasses: [NSImage.self])
+            return canReadImage(from: NSPasteboard.general)
         }
         return true
     }
