@@ -14,7 +14,7 @@ class ViewController: NSViewController {
     private var items: [RenderItem] = []
     private var renderer: Renderer!
     private var origin: CGPoint = .zero
-    private var pendingPath: DrawingPath?
+    private(set) var pendingPath: DrawingPath?
     
     private var windowController: WindowController! {
         self.view.window!.windowController as? WindowController
@@ -110,9 +110,8 @@ class ViewController: NSViewController {
     
     override func mouseUp(with event: NSEvent) {
         if let pendingPath = pendingPath {
-            items.append(pendingPath)
-            view.needsDisplay = true
             self.pendingPath = nil
+            addItem(pendingPath)
         }
     }
     
@@ -143,14 +142,26 @@ class ViewController: NSViewController {
         pasteboard.writeObjects([image])
     }
     
+    @objc func addItem(_ item: Any) {
+        items.append(item as! RenderItem)
+        undoManager?.registerUndo(withTarget: self, selector: #selector(removeLastItem(_:)), object: nil)
+        view.needsDisplay = true
+    }
+    
+    @objc func removeLastItem(_: Any?) {
+        if let item = items.popLast() {
+            undoManager?.registerUndo(withTarget: self, selector: #selector(addItem(_:)), object: item)
+            view.needsDisplay = true
+        }
+    }
+    
     private func addImage(_ image: NSImage) {
         let size = image.size
         let cgContext = CGContext(data: nil, width: Int(size.width), height: Int(size.height), bitsPerComponent: 8, bytesPerRow: 0, space: CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: CGImageAlphaInfo.noneSkipFirst.rawValue)!
         if let cgImage = image.cgImage(forProposedRect: nil, context: NSGraphicsContext(cgContext: cgContext, flipped: false), hints: nil) {
             let imageOrigin = CGPoint(x: origin.x + view.bounds.midX - CGFloat(cgImage.width) / 2.0, y: origin.y + view.bounds.midY - CGFloat(cgImage.height) / 2.0).rounded
             let imageItem = ImageRect(image: cgImage, boundingRect: .init(origin: imageOrigin, size: .init(width: cgImage.width, height: cgImage.height)))
-            items.append(imageItem)
-            view.needsDisplay = true
+            addItem(imageItem)
         }
     }
     
@@ -203,7 +214,10 @@ extension ViewController: NSServicesMenuRequestor {
 extension ViewController: NSMenuItemValidation {
     func validateMenuItem(_ menuItem: NSMenuItem) -> Bool {
         if menuItem.action == #selector(paste(_:)) {
-            return canReadImage(from: NSPasteboard.general)
+            return pendingPath == nil && canReadImage(from: NSPasteboard.general)
+        }
+        if menuItem.action == #selector(copy(_:)) {
+            return pendingPath == nil && items.count > 0
         }
         return true
     }
@@ -219,7 +233,7 @@ extension ViewController: NSDraggingDestination {
             NSFilePromiseReceiver.self,
             NSURL.self
         ]
-        let acceptedTypes = [UTType.image.identifier]
+        let acceptedTypes = NSImage.imageTypes
         let searchOptions: [NSPasteboard.ReadingOptionKey: Any] = [
             .urlReadingFileURLsOnly: true,
             .urlReadingContentsConformToTypes: acceptedTypes
