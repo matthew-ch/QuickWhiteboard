@@ -49,11 +49,7 @@ final class DrawingPath: RenderItem {
             let y = location.y + sinf(angle) * radius
             points.append(.init(x: x, y: y))
         }
-        for i in 0..<pointTriangleCount {
-            result.append(location)
-            result.append(points[i])
-            result.append(points[(i + 1) % pointTriangleCount])
-        }
+        
         if let lastLocation {
             let v = normalize(location - lastLocation)
             let u = SIMD2<Float>(-v.y, v.x)
@@ -67,6 +63,21 @@ final class DrawingPath: RenderItem {
             result.append(p2)
             result.append(p1)
             result.append(p3)
+            for i in 0..<pointTriangleCount {
+                let pi = points[i]
+                let pj = points[(i + 1) % pointTriangleCount]
+                if simd_dot(pi - location, v) >= 0 || simd_dot(pj - location, v) >= 0 {
+                    result.append(location)
+                    result.append(pi)
+                    result.append(pj)
+                }
+            }
+        } else {
+            for i in 0..<pointTriangleCount {
+                result.append(location)
+                result.append(points[i])
+                result.append(points[(i + 1) % pointTriangleCount])
+            }
         }
         return result
     }

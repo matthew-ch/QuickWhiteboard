@@ -50,7 +50,8 @@ class ViewController: NSViewController {
         let view = self.view as! MTKView
         let device = view.preferredDevice ?? MTLCreateSystemDefaultDevice()!
         view.device = device
-        view.clearColor = MTLClearColor(red: 1.0, green: 1.0, blue: 1.0, alpha: 1.0)
+        view.framebufferOnly = false
+        view.colorPixelFormat = .rgba8Unorm
         renderer = Renderer(with: device, pixelFormat: view.colorPixelFormat)
         view.delegate = self
         view.isPaused = true
@@ -81,10 +82,30 @@ class ViewController: NSViewController {
     private func renderImage() -> NSImage {
         let size = (self.view as! MTKView).drawableSize
         let texture = renderer.renderOffscreen(of: size, items: items, viewport: CGRect(origin: origin, size: view.bounds.size))
-        let ciImage = CIImage(mtlTexture: texture, options: [.colorSpace: CGColorSpace(name: CGColorSpace.sRGB)!])!.transformed(by: .init(scaleX: 1, y: -1))
-        let context = CIContext()
-        let cgImage = context.createCGImage(ciImage, from: ciImage.extent, format: .RGBA8, colorSpace: CGColorSpace(name: CGColorSpace.sRGB))!
-        let image = NSImage(cgImage: cgImage, size: size)
+        let width = Int(size.width)
+        let height = Int(size.height)
+        let bytesPerRow = width * 4
+        let totalBytes = bytesPerRow * height
+        let data = UnsafeMutableRawPointer.allocate(byteCount: totalBytes, alignment: 4)
+        
+        texture.getBytes(data, bytesPerRow: bytesPerRow, from: MTLRegionMake2D(0, 0, width, height), mipmapLevel: 0)
+        let dataProvider = CGDataProvider(data: NSData(bytesNoCopy: data, length: totalBytes, freeWhenDone: true))!
+        
+        let cgImage = CGImage(
+            width: width,
+            height: height,
+            bitsPerComponent: 8,
+            bitsPerPixel: 32,
+            bytesPerRow: bytesPerRow,
+            space: CGColorSpace(name: CGColorSpace.sRGB)!,
+            bitmapInfo: CGBitmapInfo(rawValue: CGImageAlphaInfo.noneSkipLast.rawValue),
+            provider: dataProvider,
+            decode: nil,
+            shouldInterpolate: false,
+            intent: .defaultIntent
+        )!
+
+        let image = NSImage(cgImage: cgImage, size: .zero)
         return image
     }
     
@@ -183,6 +204,12 @@ class ViewController: NSViewController {
     }
     
     func exportCanvas(_ sender: NSToolbarItem) {
+        guard items.count > 0 else {
+            let alert = NSAlert()
+            alert.messageText = "No content yet"
+            alert.beginSheetModal(for: view.window!)
+            return
+        }
         let image = renderImage()
         let toolbarButton = sender.value(forKey: "_view") as! NSView
         NSSharingServicePicker(items: [image]).show(relativeTo: .zero, of: toolbarButton, preferredEdge: .minY)

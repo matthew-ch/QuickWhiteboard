@@ -9,8 +9,11 @@ import Foundation
 import Metal
 import MetalKit
 
+private let sampleCount = 4
+
 final class Renderer {
     private var device: MTLDevice
+    private var pixelFormat: MTLPixelFormat
     private var commandQueue: MTLCommandQueue
     
     private var simplePipelineState: MTLRenderPipelineState
@@ -18,12 +21,14 @@ final class Renderer {
     
     init(with device: MTLDevice, pixelFormat: MTLPixelFormat) {
         self.device = device
+        self.pixelFormat = pixelFormat
         commandQueue = device.makeCommandQueue()!
         
         let defaultLibrary = device.makeDefaultLibrary()!
         
         let pipelineDescriptor = MTLRenderPipelineDescriptor()
         pipelineDescriptor.colorAttachments[0].pixelFormat = pixelFormat
+        pipelineDescriptor.rasterSampleCount = sampleCount
         
         pipelineDescriptor.vertexFunction = defaultLibrary.makeFunction(name: "simpleVertex")
         pipelineDescriptor.fragmentFunction = defaultLibrary.makeFunction(name: "simpleFragment")
@@ -39,36 +44,57 @@ final class Renderer {
         texturePipelineState = try! device.makeRenderPipelineState(descriptor: pipelineDescriptor)
     }
     
+    private func makeRenderPassDescriptor(size: CGSize) -> (MTLRenderPassDescriptor, MTLTexture) {
+        let textureDescriptor = MTLTextureDescriptor.texture2DDescriptor(pixelFormat: pixelFormat, width: Int(size.width), height: Int(size.height), mipmapped: false)
+        textureDescriptor.usage = [.renderTarget, .shaderRead]
+        textureDescriptor.textureType = .type2DMultisample
+        textureDescriptor.sampleCount = sampleCount
+        textureDescriptor.storageMode = .memoryless
+        let multiSampleTexture = device.makeTexture(descriptor: textureDescriptor)!
+        
+        textureDescriptor.textureType = .type2D
+        textureDescriptor.sampleCount = 1
+        textureDescriptor.storageMode = .shared
+        let resolvedTexture = device.makeTexture(descriptor: textureDescriptor)!
+
+        let renderPassDescriptor = MTLRenderPassDescriptor()
+        renderPassDescriptor.colorAttachments[0].texture = multiSampleTexture
+        renderPassDescriptor.colorAttachments[0].resolveTexture = resolvedTexture
+        renderPassDescriptor.colorAttachments[0].clearColor = .init(red: 1.0, green: 1.0, blue: 1.0, alpha: 1.0)
+        renderPassDescriptor.colorAttachments[0].loadAction = .clear
+        renderPassDescriptor.colorAttachments[0].storeAction = .multisampleResolve
+        
+        return (renderPassDescriptor, resolvedTexture)
+    }
+    
     func render(in view: MTKView, items: [RenderItem], viewport: CGRect, debug: Bool = false) {
-        guard let renderPassDescriptor = view.currentRenderPassDescriptor else {
-            return;
-        }
+        let (renderPassDescriptor, resolvedTexture) = makeRenderPassDescriptor(size: view.drawableSize)
         let commandBuffer = commandQueue.makeCommandBuffer()!
         let encoder = commandBuffer.makeRenderCommandEncoder(descriptor: renderPassDescriptor)!
         encoder.setTriangleFillMode(debug ? .lines : .fill)
         render(with: encoder, items: items, viewport: viewport)
         encoder.endEncoding()
-        commandBuffer.present(view.currentDrawable!)
-        commandBuffer.commit()
+        defer {
+            commandBuffer.commit()
+        }
+        guard let currentDrawable = view.currentDrawable else {
+            return;
+        }
+        let blitEncoder = commandBuffer.makeBlitCommandEncoder()!
+        blitEncoder.copy(from: resolvedTexture, to: currentDrawable.texture)
+        blitEncoder.endEncoding()
+        commandBuffer.present(currentDrawable)
     }
     
     func renderOffscreen(of size: CGSize, items: [RenderItem], viewport: CGRect) -> MTLTexture {
-        let textureDescriptor = MTLTextureDescriptor.texture2DDescriptor(pixelFormat: .bgra8Unorm, width: Int(size.width), height: Int(size.height), mipmapped: false)
-        textureDescriptor.usage = [.renderTarget, .shaderRead]
-        let texture = device.makeTexture(descriptor: textureDescriptor)!
-
-        let renderPassDescriptor = MTLRenderPassDescriptor()
-        renderPassDescriptor.colorAttachments[0].texture = texture
-        renderPassDescriptor.colorAttachments[0].clearColor = .init(red: 1.0, green: 1.0, blue: 1.0, alpha: 1.0)
-        renderPassDescriptor.colorAttachments[0].loadAction = .clear
-
+        let (renderPassDescriptor, resolvedTexture) = makeRenderPassDescriptor(size: size)
         let commandBuffer = commandQueue.makeCommandBuffer()!
         let encoder = commandBuffer.makeRenderCommandEncoder(descriptor: renderPassDescriptor)!
         render(with: encoder, items: items, viewport: viewport)
         encoder.endEncoding()
         commandBuffer.commit()
         commandBuffer.waitUntilCompleted()
-        return texture
+        return resolvedTexture
     }
     
     private func render(with encoder: MTLRenderCommandEncoder, items: [RenderItem], viewport: CGRect) {
