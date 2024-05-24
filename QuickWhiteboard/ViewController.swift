@@ -178,10 +178,12 @@ class ViewController: NSViewController {
     
     private func addImage(_ image: NSImage) {
         let size = image.size
-        let cgContext = CGContext(data: nil, width: Int(size.width), height: Int(size.height), bitsPerComponent: 8, bytesPerRow: 0, space: CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: CGImageAlphaInfo.noneSkipFirst.rawValue)!
-        if let cgImage = image.cgImage(forProposedRect: nil, context: NSGraphicsContext(cgContext: cgContext, flipped: false), hints: nil) {
-            let imageOrigin = CGPoint(x: origin.x + view.bounds.midX - CGFloat(cgImage.width) / 2.0, y: origin.y + view.bounds.midY - CGFloat(cgImage.height) / 2.0).rounded
-            let imageItem = ImageRect(image: cgImage, boundingRect: .init(origin: imageOrigin, size: .init(width: cgImage.width, height: cgImage.height)))
+        let scale = image.representations.first is NSPDFImageRep ? 2.0 : 1.0
+        let cgContext = CGContext(data: nil, width: Int(size.width * scale), height: Int(size.height * scale), bitsPerComponent: 8, bytesPerRow: 0, space: CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: CGImageAlphaInfo.noneSkipFirst.rawValue)!
+        var rect = CGRect(origin: .zero, size: .init(width: size.width * scale, height: size.height * scale))
+        if let cgImage = image.cgImage(forProposedRect: &rect, context: NSGraphicsContext(cgContext: cgContext, flipped: false), hints: nil) {
+            let imageOrigin = CGPoint(x: origin.x + view.bounds.midX - size.width / 2.0, y: origin.y + view.bounds.midY - size.height / 2.0).rounded
+            let imageItem = ImageRect(image: cgImage, boundingRect: .init(origin: imageOrigin, size: size))
             addItem(imageItem)
         }
     }
