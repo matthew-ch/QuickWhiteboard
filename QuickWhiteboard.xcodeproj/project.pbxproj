@@ -20,6 +20,8 @@
 		C9B1C7702BDA91660013C568 /* Shader.metal in Sources */ = {isa = PBXBuildFile; fileRef = C9B1C76F2BDA91660013C568 /* Shader.metal */; };
 		C9CC709C2BE13001001C0351 /* CGExtension.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9CC709B2BE13001001C0351 /* CGExtension.swift */; };
 		C9CC709E2BE14874001C0351 /* CanvasView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9CC709D2BE14874001C0351 /* CanvasView.swift */; };
+		C9CDCE622C01DB6400D91688 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C9CDCE612C01DB6400D91688 /* SwiftUI.framework */; };
+		C9CDCE642C01DC4400D91688 /* ToolbarControls.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9CDCE632C01DC4400D91688 /* ToolbarControls.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -38,6 +40,8 @@
 		C9B1C76F2BDA91660013C568 /* Shader.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = Shader.metal; sourceTree = "<group>"; };
 		C9CC709B2BE13001001C0351 /* CGExtension.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CGExtension.swift; sourceTree = "<group>"; };
 		C9CC709D2BE14874001C0351 /* CanvasView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CanvasView.swift; sourceTree = "<group>"; };
+		C9CDCE612C01DB6400D91688 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
+		C9CDCE632C01DC4400D91688 /* ToolbarControls.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToolbarControls.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -45,6 +49,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C9CDCE622C01DB6400D91688 /* SwiftUI.framework in Frameworks */,
 				C9B1C76C2BDA802A0013C568 /* CoreGraphics.framework in Frameworks */,
 				C9B1C7662BDA784F0013C568 /* Metal.framework in Frameworks */,
 				C9B1C7682BDA78530013C568 /* MetalKit.framework in Frameworks */,
@@ -85,6 +90,7 @@
 				C9B1C76F2BDA91660013C568 /* Shader.metal */,
 				C9B1C7552BD92A6F0013C568 /* ViewController.swift */,
 				C9B1C7622BDA6EC30013C568 /* WindowController.swift */,
+				C9CDCE632C01DC4400D91688 /* ToolbarControls.swift */,
 			);
 			path = QuickWhiteboard;
 			sourceTree = "<group>";
@@ -92,6 +98,7 @@
 		C9B1C7642BDA784F0013C568 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				C9CDCE612C01DB6400D91688 /* SwiftUI.framework */,
 				C9B1C76B2BDA802A0013C568 /* CoreGraphics.framework */,
 				C9B1C7672BDA78530013C568 /* MetalKit.framework */,
 				C9B1C7652BDA784F0013C568 /* Metal.framework */,
@@ -127,7 +134,7 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 1530;
-				LastUpgradeCheck = 1530;
+				LastUpgradeCheck = 1540;
 				TargetAttributes = {
 					C9B1C74F2BD92A6F0013C568 = {
 						CreatedOnToolsVersion = 15.3;
@@ -171,6 +178,7 @@
 			files = (
 				C9CC709C2BE13001001C0351 /* CGExtension.swift in Sources */,
 				C9B1C7702BDA91660013C568 /* Shader.metal in Sources */,
+				C9CDCE642C01DC4400D91688 /* ToolbarControls.swift in Sources */,
 				C9CC709E2BE14874001C0351 /* CanvasView.swift in Sources */,
 				C9B1C7562BD92A6F0013C568 /* ViewController.swift in Sources */,
 				C9B1C7632BDA6EC30013C568 /* WindowController.swift in Sources */,
@@ -229,6 +237,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
@@ -293,6 +302,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -320,9 +330,12 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = QuickWhiteboard/QuickWhiteboard.entitlements;
-				CODE_SIGN_STYLE = Automatic;
+				CODE_SIGN_STYLE = Manual;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
+				DEVELOPMENT_TEAM = "";
+				"DEVELOPMENT_TEAM[sdk=macosx*]" = UJJPMMAXZR;
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
@@ -336,6 +349,7 @@
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = "human.matthew-ch.QuickWhiteboard";
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 			};
@@ -347,9 +361,11 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = QuickWhiteboard/QuickWhiteboard.entitlements;
-				CODE_SIGN_STYLE = Automatic;
+				CODE_SIGN_STYLE = Manual;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
+				DEVELOPMENT_TEAM = "";
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
@@ -363,6 +379,7 @@
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = "human.matthew-ch.QuickWhiteboard";
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 			};

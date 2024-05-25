@@ -8,25 +8,22 @@
 import Cocoa
 import MetalKit
 import UniformTypeIdentifiers
+import SwiftUI
 
 class ViewController: NSViewController {
     
+    @IBOutlet weak var canvasView: CanvasView!
+    @IBOutlet weak var toolbarContainerView: NSView!
+    
+    private var exportButtonFrameView: NSView!
+
     private var items: [RenderItem] = []
     private var renderer: Renderer!
     private var origin: CGPoint = .zero
     private(set) var pendingPath: DrawingPath?
-    
-    private var windowController: WindowController! {
-        self.view.window!.windowController as? WindowController
-    }
-    
-    private var color: CGColor {
-        return windowController.colorWell.color.usingColorSpace(.sRGB)!.cgColor
-    }
 
-    private var strokeWidth: CGFloat {
-        return CGFloat(windowController.swSlider.integerValue)
-    }
+    private var strokeWidth: CGFloat = 2.0
+    private var color: Color = .init(red: 0.1, green: 0.2, blue: 0.7)
     
     private var debug = false
     private var previousViewSize: CGSize = .zero
@@ -47,29 +44,54 @@ class ViewController: NSViewController {
         super.viewDidLoad()
 
         // Do any additional setup after loading the view.
-        let view = self.view as! MTKView
-        let device = view.preferredDevice ?? MTLCreateSystemDefaultDevice()!
-        view.device = device
-        view.framebufferOnly = false
-        view.colorPixelFormat = .rgba8Unorm
-        renderer = Renderer(with: device, pixelFormat: view.colorPixelFormat)
-        view.delegate = self
-        view.isPaused = true
-        view.enableSetNeedsDisplay = true
+        let device = canvasView.preferredDevice ?? MTLCreateSystemDefaultDevice()!
+        canvasView.device = device
+        canvasView.framebufferOnly = false
+        canvasView.colorPixelFormat = .rgba8Unorm
+        renderer = Renderer(with: device, pixelFormat: canvasView.colorPixelFormat)
+        canvasView.delegate = self
+        canvasView.isPaused = true
+        canvasView.enableSetNeedsDisplay = true
         
-        view.registerForDraggedTypes(NSFilePromiseReceiver.readableDraggedTypes.map { NSPasteboard.PasteboardType($0) })
-        view.registerForDraggedTypes([NSPasteboard.PasteboardType.fileURL])
+        canvasView.registerForDraggedTypes(NSFilePromiseReceiver.readableDraggedTypes.map { NSPasteboard.PasteboardType($0) })
+        canvasView.registerForDraggedTypes([NSPasteboard.PasteboardType.fileURL])
+        
+        let toolbarView = NSHostingView(rootView: ToolbarControls(
+            strokeWidth: Binding(get: { [weak self] in
+                self!.strokeWidth
+            }, set: { [weak self] value in
+                self?.strokeWidth = value
+            }),
+            color: Binding(get: { [weak self] in
+                self!.color
+            }, set: { [weak self] value in
+                self?.color = value
+            }),
+            debugAction: { [weak self] in
+                self?.toggleDebug()
+            },
+            exportButtonFrameLocator: FrameLocatorView(referenceViewSetter: { [weak self] exportButtonFrameView in
+                self?.exportButtonFrameView = exportButtonFrameView
+            }),
+            exportAction: { [weak self] in
+                self?.exportCanvas()
+            }
+        ))
+        toolbarView.autoresizingMask = [.width]
+        toolbarView.frame = toolbarContainerView.bounds
+        toolbarView.translatesAutoresizingMaskIntoConstraints = true
+        toolbarContainerView.addSubview(toolbarView)
     }
     
     override func viewDidAppear() {
         super.viewDidAppear()
-        view.addTrackingArea(.init(rect: view.bounds, options: [.inVisibleRect, .cursorUpdate, .activeInKeyWindow], owner: self))
+        canvasView.addTrackingArea(.init(rect: canvasView.bounds, options: [.inVisibleRect, .cursorUpdate, .activeInKeyWindow], owner: canvasView))
     }
     
     override func viewDidDisappear() {
         super.viewDidDisappear()
-        for area in view.trackingAreas {
-            view.removeTrackingArea(area)
+        for area in canvasView.trackingAreas {
+            canvasView.removeTrackingArea(area)
         }
     }
 
@@ -80,8 +102,8 @@ class ViewController: NSViewController {
     }
     
     private func renderImage() -> NSImage {
-        let size = (self.view as! MTKView).drawableSize
-        let texture = renderer.renderOffscreen(of: size, items: items, viewport: CGRect(origin: origin, size: view.bounds.size))
+        let size = canvasView.drawableSize
+        let texture = renderer.renderOffscreen(of: size, items: items, viewport: CGRect(origin: origin, size: canvasView.bounds.size))
         let width = Int(size.width)
         let height = Int(size.height)
         let bytesPerRow = width * 4
@@ -111,45 +133,41 @@ class ViewController: NSViewController {
     
     // MARK: event handling
 
-    override func scrollWheel(with event: NSEvent) {
+    func canvasViewScrollWheel(with event: NSEvent) {
         let factor = event.hasPreciseScrollingDeltas ? 1.0 : 5.0
         origin.x -= event.scrollingDeltaX * factor
         origin.y += event.scrollingDeltaY * factor
         origin = origin.rounded
-        view.needsDisplay = true
+        canvasView.needsDisplay = true
     }
     
     private func convertEventLocation(_ location: NSPoint) -> CGPoint {
-        let point = view.convert(location, from: nil)
+        let point = canvasView.convert(location, from: nil)
         return CGPoint(x: point.x + origin.x, y: point.y + origin.y).rounded
     }
     
-    override func mouseDown(with event: NSEvent) {
-        pendingPath = DrawingPath(color: color, strokeWidth: strokeWidth)
+    func canvasViewMouseDown(with event: NSEvent) {
+        pendingPath = DrawingPath(color: NSColor(color).cgColor, strokeWidth: strokeWidth)
         pendingPath?.addPointSample(location: convertEventLocation(event.locationInWindow))
     }
     
-    override func mouseUp(with event: NSEvent) {
+    func canvasViewMouseUp(with event: NSEvent) {
         if let pendingPath = pendingPath {
             self.pendingPath = nil
             addItem(pendingPath)
         }
     }
     
-    override func mouseDragged(with event: NSEvent) {
+    func canvasViewMouseDragged(with event: NSEvent) {
         if let pendingPath = pendingPath {
             pendingPath.addPointSample(location: convertEventLocation(event.locationInWindow))
-            view.needsDisplay = true
+            canvasView.needsDisplay = true
         }
     }
-
-    override func cursorUpdate(with event: NSEvent) {
-        NSCursor.crosshair.set()
-    }
     
-    @IBAction func toggleDebug(_ sender: Any) {
+    private func toggleDebug() {
         debug.toggle()
-        view.needsDisplay = true
+        canvasView.needsDisplay = true
     }
     
     @IBAction func paste(_ sender: Any) {
@@ -166,13 +184,13 @@ class ViewController: NSViewController {
     @objc func addItem(_ item: Any) {
         items.append(item as! RenderItem)
         undoManager?.registerUndo(withTarget: self, selector: #selector(removeLastItem(_:)), object: nil)
-        view.needsDisplay = true
+        canvasView.needsDisplay = true
     }
     
     @objc func removeLastItem(_: Any?) {
         if let item = items.popLast() {
             undoManager?.registerUndo(withTarget: self, selector: #selector(addItem(_:)), object: item)
-            view.needsDisplay = true
+            canvasView.needsDisplay = true
         }
     }
     
@@ -182,7 +200,7 @@ class ViewController: NSViewController {
         let cgContext = CGContext(data: nil, width: Int(size.width * scale), height: Int(size.height * scale), bitsPerComponent: 8, bytesPerRow: 0, space: CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: CGImageAlphaInfo.noneSkipFirst.rawValue)!
         var rect = CGRect(origin: .zero, size: .init(width: size.width * scale, height: size.height * scale))
         if let cgImage = image.cgImage(forProposedRect: &rect, context: NSGraphicsContext(cgContext: cgContext, flipped: false), hints: nil) {
-            let imageOrigin = CGPoint(x: origin.x + view.bounds.midX - size.width / 2.0, y: origin.y + view.bounds.midY - size.height / 2.0).rounded
+            let imageOrigin = CGPoint(x: origin.x + canvasView.bounds.midX - size.width / 2.0, y: origin.y + canvasView.bounds.midY - size.height / 2.0).rounded
             let imageItem = ImageRect(image: cgImage, boundingRect: .init(origin: imageOrigin, size: size))
             addItem(imageItem)
         }
@@ -205,7 +223,7 @@ class ViewController: NSViewController {
         previousViewSize = newSize
     }
     
-    func exportCanvas(_ sender: NSToolbarItem) {
+    func exportCanvas() {
         guard items.count > 0 else {
             let alert = NSAlert()
             alert.messageText = "No content yet"
@@ -213,8 +231,7 @@ class ViewController: NSViewController {
             return
         }
         let image = renderImage()
-        let toolbarButton = sender.value(forKey: "_view") as! NSView
-        NSSharingServicePicker(items: [image]).show(relativeTo: .zero, of: toolbarButton, preferredEdge: .minY)
+        NSSharingServicePicker(items: [image]).show(relativeTo: .zero, of: exportButtonFrameView, preferredEdge: .minY)
     }
     
     private func canReadImage(from pasteboard: NSPasteboard) -> Bool {
@@ -295,7 +312,7 @@ extension ViewController: MTKViewDelegate {
     
     func draw(in view: MTKView) {
         let pendingPaths = pendingPath.map{ [$0] } ?? []
-        renderer.render(in: view, items: items + pendingPaths, viewport: CGRect(origin: origin, size: view.bounds.size), debug: debug)
+        renderer.render(in: view, items: items + pendingPaths, viewport: CGRect(origin: origin, size: canvasView.bounds.size), debug: debug)
     }
     
     

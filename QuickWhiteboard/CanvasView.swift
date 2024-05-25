@@ -14,9 +14,33 @@ class CanvasView: MTKView {
         delegate as? ViewController
     }
     
+    override var mouseDownCanMoveWindow: Bool {
+        return false
+    }
+    
+    override func cursorUpdate(with event: NSEvent) {
+        NSCursor.crosshair.set()
+    }
+    
     override func setFrameSize(_ newSize: NSSize) {
         super.setFrameSize(newSize)
         viewController?.viewHasSetNewSize(newSize)
+    }
+    
+    override func scrollWheel(with event: NSEvent) {
+        viewController?.canvasViewScrollWheel(with: event)
+    }
+    
+    override func mouseDown(with event: NSEvent) {
+        viewController?.canvasViewMouseDown(with: event)
+    }
+    
+    override func mouseUp(with event: NSEvent) {
+        viewController?.canvasViewMouseUp(with: event)
+    }
+    
+    override func mouseDragged(with event: NSEvent) {
+        viewController?.canvasViewMouseDragged(with: event)
     }
 
     override func draggingEntered(_ sender: any NSDraggingInfo) -> NSDragOperation {
