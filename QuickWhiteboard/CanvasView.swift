@@ -58,7 +58,7 @@ class CanvasView: MTKView {
     }
 
     override func performKeyEquivalent(with event: NSEvent) -> Bool {
-        if viewController?.pendingPath != nil {
+        if viewController?.pendingItem != nil {
             if event.type == .keyDown {
                 NSSound.beep()
                 return true

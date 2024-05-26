@@ -104,17 +104,17 @@ final class Renderer {
             if !viewport.intersects(item.boundingRect) {
                 continue
             }
-            if let path = item as? DrawingPath {
+            if let drawing = item as? DrawingItem {
                 encoder.setRenderPipelineState(simplePipelineState)
-                let (vertexBuffer, vertexCount) = path.upload(to: device)
+                let (vertexBuffer, vertexCount) = drawing.upload(to: device)
                 encoder.setVertexBuffer(vertexBuffer, offset: 0, index: 1)
-                var color = path.color
+                var color = drawing.color
                 encoder.setFragmentBytes(&color, length: MemoryLayout<SIMD4<Float>>.size, index: 0)
                 
                 encoder.drawPrimitives(type: .triangle, vertexStart: 0, vertexCount: vertexCount)
-            } else if let ir = item as? ImageRect {
+            } else if let image = item as? ImageItem {
                 encoder.setRenderPipelineState(texturePipelineState)
-                let (texture, vertexBuffer, uvBuffer, vertexCount) = ir.upload(to: device)
+                let (texture, vertexBuffer, uvBuffer, vertexCount) = image.upload(to: device)
                 encoder.setVertexBuffer(vertexBuffer, offset: 0, index: 1)
                 encoder.setVertexBuffer(uvBuffer, offset: 0, index: 2)
                 encoder.setFragmentTexture(texture, index: 0)

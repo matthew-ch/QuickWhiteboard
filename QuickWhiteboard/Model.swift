@@ -19,7 +19,7 @@ struct PointSample {
     let location: SIMD2<Float>
 }
 
-final class DrawingPath: RenderItem {
+final class DrawingItem: RenderItem {
     private var points: [PointSample] = []
     
     let color: SIMD4<Float>
@@ -122,9 +122,28 @@ final class DrawingPath: RenderItem {
     }
 }
 
-final class ImageRect: RenderItem {
+final class ImageItem: RenderItem {
     private(set) var image: CGImage
-    var boundingRect: CGRect
+    var center: SIMD2<Float> {
+        didSet {
+            vertexBuffer = nil
+            updateBoudingRect()
+        }
+    }
+    let size: SIMD2<Float>
+    var scale: Float = 1.0 {
+        didSet {
+            vertexBuffer = nil
+            updateBoudingRect()
+        }
+    }
+    var rotation: Float = 0.0 {
+        didSet {
+            vertexBuffer = nil
+            updateBoudingRect()
+        }
+    }
+    private(set) var boundingRect: CGRect = .zero
     
     private var texture: MTLTexture?
     private var vertexBuffer: MTLBuffer?
@@ -140,9 +159,26 @@ final class ImageRect: RenderItem {
         .init(1.0, 1.0),
     ]
     
-    init(image: CGImage, boundingRect: CGRect) {
+    init(image: CGImage, center: SIMD2<Float>, size: SIMD2<Float>) {
         self.image = image
-        self.boundingRect = boundingRect
+        self.center = center
+        self.size = size
+        self.updateBoudingRect()
+    }
+    
+    private func updateBoudingRect() {
+        let cos_value = cos(rotation) * scale
+        let sin_value = sin(rotation) * scale
+        let matrix = simd_float2x2(rows: [
+            .init(cos_value, -sin_value),
+            .init(sin_value, cos_value),
+        ])
+        let p1 = simd_mul(matrix, size * 0.5)
+        let p2 = simd_mul(matrix, size * SIMD2(0.5, -0.5))
+        let dx = max(abs(p1.x), abs(p2.x))
+        let dy = max(abs(p1.y), abs(p2.y))
+        let half_size = SIMD2(dx, dy)
+        boundingRect = .init(origin: .from(center - half_size), size: .from(half_size * 2.0))
     }
 
     func upload(to device: MTLDevice) -> (texture: MTLTexture, vertexBuffer: MTLBuffer, uvBuffer: MTLBuffer, vertexCount: Int) {
@@ -158,15 +194,22 @@ final class ImageRect: RenderItem {
             ])
         }
         if vertexBuffer == nil {
-            let origin = boundingRect.origin.float2
-            let size = boundingRect.size.float2
+            let cos_value = cos(rotation) * scale
+            let sin_value = sin(rotation) * scale
+            let matrix = simd_float2x2(rows: [
+                .init(cos_value, -sin_value),
+                .init(sin_value, cos_value),
+            ])
+            let p1 = simd_mul(matrix, size * 0.5)
+            let p2 = simd_mul(matrix, size * SIMD2(0.5, -0.5))
+
             let vertexes: [SIMD2<Float>] = [
-                origin,
-                origin + size,
-                .init(origin.x, origin.y + size.y),
-                origin + size,
-                origin,
-                .init(origin.x + size.x, origin.y)
+                center - p1,
+                center + p1,
+                center - p2,
+                center + p1,
+                center - p1,
+                center + p2,
             ]
             vertexBuffer = device.makeBuffer(bytes: vertexes, length: MemoryLayout<SIMD2<Float>>.size * 6)
         }

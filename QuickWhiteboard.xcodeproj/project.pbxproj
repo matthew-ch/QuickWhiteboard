@@ -22,6 +22,7 @@
 		C9CC709E2BE14874001C0351 /* CanvasView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9CC709D2BE14874001C0351 /* CanvasView.swift */; };
 		C9CDCE622C01DB6400D91688 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C9CDCE612C01DB6400D91688 /* SwiftUI.framework */; };
 		C9CDCE642C01DC4400D91688 /* ToolbarControls.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9CDCE632C01DC4400D91688 /* ToolbarControls.swift */; };
+		C9CDCE682C0390B600D91688 /* Combine.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C9CDCE672C0390B600D91688 /* Combine.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -42,6 +43,7 @@
 		C9CC709D2BE14874001C0351 /* CanvasView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CanvasView.swift; sourceTree = "<group>"; };
 		C9CDCE612C01DB6400D91688 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 		C9CDCE632C01DC4400D91688 /* ToolbarControls.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToolbarControls.swift; sourceTree = "<group>"; };
+		C9CDCE672C0390B600D91688 /* Combine.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Combine.framework; path = System/Library/Frameworks/Combine.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -49,6 +51,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C9CDCE682C0390B600D91688 /* Combine.framework in Frameworks */,
 				C9CDCE622C01DB6400D91688 /* SwiftUI.framework in Frameworks */,
 				C9B1C76C2BDA802A0013C568 /* CoreGraphics.framework in Frameworks */,
 				C9B1C7662BDA784F0013C568 /* Metal.framework in Frameworks */,
@@ -98,6 +101,7 @@
 		C9B1C7642BDA784F0013C568 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				C9CDCE672C0390B600D91688 /* Combine.framework */,
 				C9CDCE612C01DB6400D91688 /* SwiftUI.framework */,
 				C9B1C76B2BDA802A0013C568 /* CoreGraphics.framework */,
 				C9B1C7672BDA78530013C568 /* MetalKit.framework */,

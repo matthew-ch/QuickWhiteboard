@@ -8,6 +8,10 @@
 import Foundation
 
 extension CGPoint {
+    static func from(_ float2: SIMD2<Float>) -> Self {
+        .init(x: CGFloat(float2.x), y: CGFloat(float2.y))
+    }
+
     var float2: SIMD2<Float> {
         .init(x: Float(x), y: Float(y))
     }
@@ -18,6 +22,10 @@ extension CGPoint {
 }
 
 extension CGSize {
+    static func from(_ float2: SIMD2<Float>) -> Self {
+        .init(width: CGFloat(float2.x), height: CGFloat(float2.y))
+    }
+
     var float2: SIMD2<Float> {
         .init(x: Float(width), y: Float(height))
     }

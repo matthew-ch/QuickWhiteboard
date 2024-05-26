@@ -9,6 +9,7 @@ import Cocoa
 import MetalKit
 import UniformTypeIdentifiers
 import SwiftUI
+import Combine
 
 class ViewController: NSViewController {
     
@@ -20,9 +21,14 @@ class ViewController: NSViewController {
     private var items: [RenderItem] = []
     private var renderer: Renderer!
     private var origin: CGPoint = .zero
-    private(set) var pendingPath: DrawingPath?
+    private(set) var pendingItem: RenderItem? {
+        didSet {
+            canvasView?.needsDisplay = true
+        }
+    }
     
     private let toolbarDataModel = ToolbarDataModel(strokeWidth: 2.0, color: .init(red: 0.1, green: 0.2, blue: 0.7))
+    private var imageItemPropertyChange: AnyCancellable?
     
     private var debug = false
     private var previousViewSize: CGSize = .zero
@@ -126,20 +132,23 @@ class ViewController: NSViewController {
     }
     
     func canvasViewMouseDown(with event: NSEvent) {
-        pendingPath = DrawingPath(color: NSColor(toolbarDataModel.color).usingColorSpace(.sRGB)!.cgColor, strokeWidth: toolbarDataModel.strokeWidth)
-        pendingPath?.addPointSample(location: convertEventLocation(event.locationInWindow))
+        if pendingItem == nil {
+            let drawingItem = DrawingItem(color: NSColor(toolbarDataModel.color).usingColorSpace(.sRGB)!.cgColor, strokeWidth: toolbarDataModel.strokeWidth)
+            drawingItem.addPointSample(location: convertEventLocation(event.locationInWindow))
+            pendingItem = drawingItem
+        }
     }
     
     func canvasViewMouseUp(with event: NSEvent) {
-        if let pendingPath = pendingPath {
-            self.pendingPath = nil
-            addItem(pendingPath)
+        if let drawingItem = pendingItem as? DrawingItem {
+            self.pendingItem = nil
+            addItem(drawingItem)
         }
     }
     
     func canvasViewMouseDragged(with event: NSEvent) {
-        if let pendingPath = pendingPath {
-            pendingPath.addPointSample(location: convertEventLocation(event.locationInWindow))
+        if let drawingItem = pendingItem as? DrawingItem {
+            drawingItem.addPointSample(location: convertEventLocation(event.locationInWindow))
             canvasView.needsDisplay = true
         }
     }
@@ -174,9 +183,18 @@ class ViewController: NSViewController {
         let cgContext = CGContext(data: nil, width: Int(size.width * scale), height: Int(size.height * scale), bitsPerComponent: 8, bytesPerRow: 0, space: CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: CGImageAlphaInfo.noneSkipFirst.rawValue)!
         var rect = CGRect(origin: .zero, size: .init(width: size.width * scale, height: size.height * scale))
         if let cgImage = image.cgImage(forProposedRect: &rect, context: NSGraphicsContext(cgContext: cgContext, flipped: false), hints: nil) {
-            let imageOrigin = CGPoint(x: origin.x + canvasView.bounds.midX - size.width / 2.0, y: origin.y + canvasView.bounds.midY - size.height / 2.0).rounded
-            let imageItem = ImageRect(image: cgImage, boundingRect: .init(origin: imageOrigin, size: size))
-            addItem(imageItem)
+            let imageCenter = CGPoint(x: origin.x + canvasView.bounds.midX, y: origin.y + canvasView.bounds.midY).rounded
+            let imageItem = ImageItem(image: cgImage, center: imageCenter.float2, size: size.float2)
+            pendingItem = imageItem
+            let imageItemProperty = ImageItemProperty()
+            imageItemPropertyChange = imageItemProperty.objectWillChange.sink { [weak self] _ in
+                DispatchQueue.main.async {
+                    imageItem.scale = Float(imageItemProperty.scale / 100.0)
+                    imageItem.rotation = Float(imageItemProperty.rotation / 180 * CGFloat.pi)
+                    self?.canvasView.needsDisplay = true
+                }
+            }
+            toolbarDataModel.imageItemProperty = imageItemProperty
         }
     }
     
@@ -232,6 +250,15 @@ extension ViewController: ToolbarDelegate {
     func setExportButtonLocatorView(_ view: NSView) {
         exportButtonLocatorView = view
     }
+    
+    func commitImageItemProperty() {
+        if let imageItem = pendingItem as? ImageItem {
+            pendingItem = nil
+            addItem(imageItem)
+        }
+        imageItemPropertyChange = nil
+        toolbarDataModel.imageItemProperty = nil
+    }
 }
 
 extension ViewController: NSServicesMenuRequestor {
@@ -246,10 +273,10 @@ extension ViewController: NSServicesMenuRequestor {
 extension ViewController: NSMenuItemValidation {
     func validateMenuItem(_ menuItem: NSMenuItem) -> Bool {
         if menuItem.action == #selector(paste(_:)) {
-            return pendingPath == nil && canReadImage(from: NSPasteboard.general)
+            return pendingItem == nil && canReadImage(from: NSPasteboard.general)
         }
         if menuItem.action == #selector(copy(_:)) {
-            return pendingPath == nil && items.count > 0
+            return pendingItem == nil && items.count > 0
         }
         return true
     }
@@ -297,8 +324,8 @@ extension ViewController: MTKViewDelegate {
     }
     
     func draw(in view: MTKView) {
-        let pendingPaths = pendingPath.map{ [$0] } ?? []
-        renderer.render(in: view, items: items + pendingPaths, viewport: CGRect(origin: origin, size: canvasView.bounds.size), debug: debug)
+        let renderItems = items + (pendingItem.map{ [$0] } ?? [])
+        renderer.render(in: view, items: renderItems, viewport: CGRect(origin: origin, size: canvasView.bounds.size), debug: debug)
     }
     
     
