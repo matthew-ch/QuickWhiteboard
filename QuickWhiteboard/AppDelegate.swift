@@ -14,8 +14,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ aNotification: Notification) {
         // Insert code here to initialize your application
-        NSColorPanel.setPickerMask([.rgbModeMask, .wheelModeMask, .crayonModeMask, .colorListModeMask])
-        NSColorPanel.shared.showsAlpha = false
         newDocument(nil)
         NotificationCenter.default.addObserver(self, selector: #selector(windowDidClose(_:)), name: NSWindow.willCloseNotification, object: nil)
     }

@@ -15,15 +15,14 @@ class ViewController: NSViewController {
     @IBOutlet weak var canvasView: CanvasView!
     @IBOutlet weak var toolbarContainerView: NSView!
     
-    private var exportButtonFrameView: NSView!
+    private var exportButtonLocatorView: NSView!
 
     private var items: [RenderItem] = []
     private var renderer: Renderer!
     private var origin: CGPoint = .zero
     private(set) var pendingPath: DrawingPath?
-
-    private var strokeWidth: CGFloat = 2.0
-    private var color: Color = .init(red: 0.1, green: 0.2, blue: 0.7)
+    
+    private let toolbarDataModel = ToolbarDataModel(strokeWidth: 2.0, color: .init(red: 0.1, green: 0.2, blue: 0.7))
     
     private var debug = false
     private var previousViewSize: CGSize = .zero
@@ -56,27 +55,7 @@ class ViewController: NSViewController {
         canvasView.registerForDraggedTypes(NSFilePromiseReceiver.readableDraggedTypes.map { NSPasteboard.PasteboardType($0) })
         canvasView.registerForDraggedTypes([NSPasteboard.PasteboardType.fileURL])
         
-        let toolbarView = NSHostingView(rootView: ToolbarControls(
-            strokeWidth: Binding(get: { [weak self] in
-                self!.strokeWidth
-            }, set: { [weak self] value in
-                self?.strokeWidth = value
-            }),
-            color: Binding(get: { [weak self] in
-                self!.color
-            }, set: { [weak self] value in
-                self?.color = value
-            }),
-            debugAction: { [weak self] in
-                self?.toggleDebug()
-            },
-            exportButtonFrameLocator: FrameLocatorView(referenceViewSetter: { [weak self] exportButtonFrameView in
-                self?.exportButtonFrameView = exportButtonFrameView
-            }),
-            exportAction: { [weak self] in
-                self?.exportCanvas()
-            }
-        ))
+        let toolbarView = NSHostingView(rootView: ToolbarControls(dataModel: toolbarDataModel, delegate: self))
         toolbarView.autoresizingMask = [.width]
         toolbarView.frame = toolbarContainerView.bounds
         toolbarView.translatesAutoresizingMaskIntoConstraints = true
@@ -147,7 +126,7 @@ class ViewController: NSViewController {
     }
     
     func canvasViewMouseDown(with event: NSEvent) {
-        pendingPath = DrawingPath(color: NSColor(color).cgColor, strokeWidth: strokeWidth)
+        pendingPath = DrawingPath(color: NSColor(toolbarDataModel.color).usingColorSpace(.sRGB)!.cgColor, strokeWidth: toolbarDataModel.strokeWidth)
         pendingPath?.addPointSample(location: convertEventLocation(event.locationInWindow))
     }
     
@@ -163,11 +142,6 @@ class ViewController: NSViewController {
             pendingPath.addPointSample(location: convertEventLocation(event.locationInWindow))
             canvasView.needsDisplay = true
         }
-    }
-    
-    private func toggleDebug() {
-        debug.toggle()
-        canvasView.needsDisplay = true
     }
     
     @IBAction func paste(_ sender: Any) {
@@ -223,17 +197,6 @@ class ViewController: NSViewController {
         previousViewSize = newSize
     }
     
-    func exportCanvas() {
-        guard items.count > 0 else {
-            let alert = NSAlert()
-            alert.messageText = "No content yet"
-            alert.beginSheetModal(for: view.window!)
-            return
-        }
-        let image = renderImage()
-        NSSharingServicePicker(items: [image]).show(relativeTo: .zero, of: exportButtonFrameView, preferredEdge: .minY)
-    }
-    
     private func canReadImage(from pasteboard: NSPasteboard) -> Bool {
         pasteboard.canReadObject(forClasses: [NSImage.self], options: [.urlReadingContentsConformToTypes: [UTType.image.identifier]])
     }
@@ -245,6 +208,29 @@ class ViewController: NSViewController {
             return true
         }
         return false
+    }
+}
+
+extension ViewController: ToolbarDelegate {
+
+    func toggleDebug() {
+        debug.toggle()
+        canvasView.needsDisplay = true
+    }
+    
+    func exportCanvas() {
+        guard items.count > 0 else {
+            let alert = NSAlert()
+            alert.messageText = "No content yet"
+            alert.beginSheetModal(for: view.window!)
+            return
+        }
+        let image = renderImage()
+        NSSharingServicePicker(items: [image]).show(relativeTo: .zero, of: exportButtonLocatorView, preferredEdge: .minY)
+    }
+    
+    func setExportButtonLocatorView(_ view: NSView) {
+        exportButtonLocatorView = view
     }
 }
 

@@ -7,6 +7,22 @@
 
 import SwiftUI
 
+class ToolbarDataModel: ObservableObject {
+    @Published var strokeWidth: CGFloat
+    @Published var color: Color
+
+    init(strokeWidth: CGFloat, color: Color) {
+        self.strokeWidth = strokeWidth
+        self.color = color
+    }
+}
+
+protocol ToolbarDelegate: AnyObject {
+    func toggleDebug() -> Void
+    func setExportButtonLocatorView(_ view: NSView) -> Void
+    func exportCanvas() -> Void
+}
+
 struct FrameLocatorView: NSViewRepresentable {
     typealias NSViewType = NSView
     
@@ -24,51 +40,45 @@ struct FrameLocatorView: NSViewRepresentable {
 
 struct ToolbarControls: View {
     
-    @Binding var strokeWidth: CGFloat
-    @Binding var color: Color
+    @ObservedObject var dataModel: ToolbarDataModel
+    weak var delegate: ToolbarDelegate?
 
-    let debugAction: () -> Void
-    let exportButtonFrameLocator: FrameLocatorView
-    let exportAction: () -> Void
-    
     var body: some View {
         HStack {
-            Slider(value: $strokeWidth, in: 1...32) {
+            Slider(value: $dataModel.strokeWidth, in: 1...32) {
                 Text("Stroke")
                     .font(.caption)
                     .foregroundColor(.secondary)
             }
             .frame(width: 180)
-            ColorPicker(selection: $color, supportsOpacity: false, label: {
+            ColorPicker(selection: $dataModel.color, supportsOpacity: false, label: {
                 Text("Color")
                     .font(.caption)
                     .foregroundColor(.secondary)
             })
             Spacer()
             #if DEBUG
-            Button(action: debugAction, label: {
+            Button(action: {
+                delegate?.toggleDebug()
+            }, label: {
                 Image(systemName: "ladybug")
             })
             #endif
-            Button(action: exportAction, label: {
+            Button(action: {
+                delegate?.exportCanvas()
+            }, label: {
                 Image(systemName: "square.and.arrow.up")
             })
-            .overlay(exportButtonFrameLocator, alignment: .center)
+            .overlay(FrameLocatorView(referenceViewSetter: { view in
+                delegate?.setExportButtonLocatorView(view)
+            }), alignment: .center)
         }
         .padding(.horizontal)
     }
 }
 
 #Preview {
-    @State var strokeWidth: CGFloat = 2.0
-    @State var color: Color = .blue
     
-    return ToolbarControls(
-        strokeWidth: $strokeWidth,
-        color: $color,
-        debugAction: {},
-        exportButtonFrameLocator: FrameLocatorView(referenceViewSetter: {_ in }),
-        exportAction: {}
-    )
+    return ToolbarControls(dataModel: ToolbarDataModel(strokeWidth: 2.0, color: .red))
         .frame(width: 400, height: 40)
 }
