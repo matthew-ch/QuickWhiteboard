@@ -3,17 +3,22 @@
 
 > A lightweight whiteboard app for macOS
 
-# Features
+## Features
 
 - Infinite canvas
 - Unlimited undo and redo
 - Import images from pasteboard, drag and drop, continuity camera
 - Export canvas via copy or system sharing service
 
-# Screenshot
+## Compatibility
 
-<img src="./Screenshot.png" width="912">
+- macOS 11+
+- Only Apple Silicon Macs supported
 
-# License
+## Screenshot
+
+<img src="./Screenshot.png" width="796">
+
+## License
 
 [Mozilla Public License 2.0](./LICENSE)
