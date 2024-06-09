@@ -7,42 +7,34 @@
 
 import SwiftUI
 
-class ImageItemProperty: ObservableObject {
-    @Published var scale: CGFloat = 100.0
-    @Published var rotation: CGFloat = 0.0
-}
-
-class ToolbarDataModel: ObservableObject {
-    @Published var strokeWidth: CGFloat
-    @Published var color: Color
-    @Published var imageItemProperty: ImageItemProperty?
-
-    init(strokeWidth: CGFloat, color: Color, imageItemProperty: ImageItemProperty? = nil) {
-        self.strokeWidth = strokeWidth
-        self.color = color
-        self.imageItemProperty = imageItemProperty
-    }
-}
-
 protocol ToolbarDelegate: AnyObject {
     func toggleDebug() -> Void
-    func setExportButtonLocatorView(_ view: NSView) -> Void
-    func exportCanvas() -> Void
+    func exportCanvas(_ sender: NSButton) -> Void
     func commitImageItemProperty() -> Void
+    func onClickTool(identifier: ToolIdentifier) -> Void
 }
 
-struct FrameLocatorView: NSViewRepresentable {
-    typealias NSViewType = NSView
-    
-    let referenceViewSetter: (NSView) -> Void
+struct ExportButton: NSViewRepresentable {
+    weak var toolbarDelegate: ToolbarDelegate?
 
-    func makeNSView(context: Context) -> NSView {
-        let view = NSView()
-        referenceViewSetter(view)
-        return view
+    func makeNSView(context: Context) -> NSButton {
+        let button = NSButton(
+            image: NSImage(systemSymbolName: "square.and.arrow.up", accessibilityDescription: nil)!,
+            target: context.coordinator,
+            action: #selector(ViewController.exportCanvas(_:))
+        )
+        button.setContentHuggingPriority(.defaultHigh, for: .horizontal)
+        return button
     }
     
-    func updateNSView(_ nsView: NSView, context: Context) {
+    func updateNSView(_ nsView: NSButton, context: Context) {
+        nsView.target = context.coordinator
+    }
+    
+    typealias NSViewType = NSButton
+    
+    func makeCoordinator() -> ToolbarDelegate? {
+        toolbarDelegate
     }
 }
 
@@ -58,12 +50,21 @@ struct MainToolbar: View {
                     .font(.caption)
                     .foregroundColor(.secondary)
             }
-            .frame(width: 180)
+            .frame(maxWidth: 180)
             ColorPicker(selection: $dataModel.color, supportsOpacity: false, label: {
                 Text("Color")
                     .font(.caption)
                     .foregroundColor(.secondary)
             })
+            Spacer()
+            ForEach(ToolIdentifier.allCases) { id in
+                Button(action: {
+                    delegate?.onClickTool(identifier: id)
+                }, label: {
+                    Image(systemName: id.symbolName)
+                        .foregroundColor(id == dataModel.activeToolIdentifier ? Color.accentColor : Color.primary)
+                })
+            }
             Spacer()
             #if DEBUG
             Button(action: {
@@ -72,14 +73,7 @@ struct MainToolbar: View {
                 Image(systemName: "ladybug")
             })
             #endif
-            Button(action: {
-                delegate?.exportCanvas()
-            }, label: {
-                Image(systemName: "square.and.arrow.up")
-            })
-            .overlay(FrameLocatorView(referenceViewSetter: { view in
-                delegate?.setExportButtonLocatorView(view)
-            }), alignment: .center)
+            ExportButton(toolbarDelegate: delegate)
         }
         .padding(.horizontal)
     }
@@ -147,8 +141,8 @@ struct ToolbarControls: View {
     weak var delegate: ToolbarDelegate?
     
     var body: some View {
-        if let property = dataModel.imageItemProperty {
-            ImageEditToolbar(imageItemProperty: property, delegate: delegate)
+        if dataModel.activeToolIdentifier == .image {
+            ImageEditToolbar(imageItemProperty: dataModel.imageItemProperty, delegate: delegate)
         } else {
             MainToolbar(dataModel: dataModel, delegate: delegate)
         }

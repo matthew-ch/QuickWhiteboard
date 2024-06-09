@@ -19,7 +19,7 @@ class CanvasView: MTKView {
     }
     
     override func cursorUpdate(with event: NSEvent) {
-        NSCursor.crosshair.set()
+        viewController?.activeTool.setCursor()
     }
     
     override func setFrameSize(_ newSize: NSSize) {

@@ -15,20 +15,31 @@ class ViewController: NSViewController {
     
     @IBOutlet weak var canvasView: CanvasView!
     @IBOutlet weak var toolbarContainerView: NSView!
-    
-    private var exportButtonLocatorView: NSView!
 
     private var items: [RenderItem] = []
     private var renderer: Renderer!
     private var origin: CGPoint = .zero
-    private(set) var pendingItem: RenderItem? {
-        didSet {
-            canvasView?.needsDisplay = true
+    
+    private lazy var freehandTool = FreehandTool(delegate: self)
+    private lazy var lineTool = LineTool(delegate: self)
+    private lazy var imageTool = ImageTool(delegate: self)
+
+    var activeTool: Tool {
+        switch toolbarDataModel.activeToolIdentifier {
+        case .freehand:
+            freehandTool
+        case .line:
+            lineTool
+        case .image:
+            imageTool
         }
     }
     
-    private let toolbarDataModel = ToolbarDataModel(strokeWidth: 2.0, color: .init(red: 0.1, green: 0.2, blue: 0.7))
-    private var imageItemPropertyChange: AnyCancellable?
+    var pendingItem: RenderItem? {
+        activeTool.editingItem
+    }
+    
+    let toolbarDataModel = ToolbarDataModel(strokeWidth: 2.0, color: .init(red: 0.1, green: 0.2, blue: 0.7))
     
     private var debug = false
     private var previousViewSize: CGSize = .zero
@@ -54,6 +65,7 @@ class ViewController: NSViewController {
         canvasView.framebufferOnly = false
         canvasView.colorPixelFormat = .rgba8Unorm
         renderer = Renderer(with: device, pixelFormat: canvasView.colorPixelFormat)
+        renderer.updateOnScreenDrawableSize(canvasView.drawableSize)
         canvasView.delegate = self
         canvasView.isPaused = true
         canvasView.enableSetNeedsDisplay = true
@@ -132,25 +144,15 @@ class ViewController: NSViewController {
     }
     
     func canvasViewMouseDown(with event: NSEvent) {
-        if pendingItem == nil {
-            let drawingItem = DrawingItem(color: NSColor(toolbarDataModel.color).usingColorSpace(.sRGB)!.cgColor, strokeWidth: toolbarDataModel.strokeWidth)
-            drawingItem.addPointSample(location: convertEventLocation(event.locationInWindow))
-            pendingItem = drawingItem
-        }
+        activeTool.mouseDown(with: event, location: convertEventLocation(event.locationInWindow))
     }
     
     func canvasViewMouseUp(with event: NSEvent) {
-        if let drawingItem = pendingItem as? DrawingItem {
-            self.pendingItem = nil
-            addItem(drawingItem)
-        }
+        activeTool.mouseUp(with: event, location: convertEventLocation(event.locationInWindow))
     }
     
     func canvasViewMouseDragged(with event: NSEvent) {
-        if let drawingItem = pendingItem as? DrawingItem {
-            drawingItem.addPointSample(location: convertEventLocation(event.locationInWindow))
-            canvasView.needsDisplay = true
-        }
+        activeTool.mouseDragged(with: event, location: convertEventLocation(event.locationInWindow))
     }
     
     @IBAction func paste(_ sender: Any) {
@@ -185,16 +187,8 @@ class ViewController: NSViewController {
         if let cgImage = image.cgImage(forProposedRect: &rect, context: NSGraphicsContext(cgContext: cgContext, flipped: false), hints: nil) {
             let imageCenter = CGPoint(x: origin.x + canvasView.bounds.midX, y: origin.y + canvasView.bounds.midY).rounded
             let imageItem = ImageItem(image: cgImage, center: imageCenter.float2, size: size.float2)
-            pendingItem = imageItem
-            let imageItemProperty = ImageItemProperty()
-            imageItemPropertyChange = imageItemProperty.objectWillChange.sink { [weak self] _ in
-                DispatchQueue.main.async {
-                    imageItem.scale = Float(imageItemProperty.scale / 100.0)
-                    imageItem.rotation = Float(imageItemProperty.rotation / 180 * CGFloat.pi)
-                    self?.canvasView.needsDisplay = true
-                }
-            }
-            toolbarDataModel.imageItemProperty = imageItemProperty
+            imageTool.setImageItem(item: imageItem)
+            toolbarDataModel.activeToolIdentifier = .image
         }
     }
     
@@ -229,6 +223,22 @@ class ViewController: NSViewController {
     }
 }
 
+// MARK: ToolDelegate
+extension ViewController: ToolDelegate {
+    func setDefaultTool() {
+        toolbarDataModel.activeToolIdentifier = .freehand
+    }
+    
+    func setNeedsDisplay() {
+        canvasView.needsDisplay = true
+    }
+    
+    func commit(item: RenderItem) {
+        addItem(item)
+    }
+}
+
+// MARK: ToolbarDelegate
 extension ViewController: ToolbarDelegate {
 
     func toggleDebug() {
@@ -236,7 +246,8 @@ extension ViewController: ToolbarDelegate {
         canvasView.needsDisplay = true
     }
     
-    func exportCanvas() {
+    @objc
+    func exportCanvas(_ sender: NSButton) {
         guard items.count > 0 else {
             let alert = NSAlert()
             alert.messageText = "No content yet"
@@ -244,23 +255,36 @@ extension ViewController: ToolbarDelegate {
             return
         }
         let image = renderImage()
-        NSSharingServicePicker(items: [image]).show(relativeTo: .zero, of: exportButtonLocatorView, preferredEdge: .minY)
-    }
-    
-    func setExportButtonLocatorView(_ view: NSView) {
-        exportButtonLocatorView = view
+        NSSharingServicePicker(items: [image]).show(relativeTo: .zero, of: sender, preferredEdge: .minY)
     }
     
     func commitImageItemProperty() {
-        if let imageItem = pendingItem as? ImageItem {
-            pendingItem = nil
-            addItem(imageItem)
+        imageTool.commit()
+    }
+    
+    func onClickTool(identifier: ToolIdentifier) {
+        if identifier == .image {
+            let openPanel = NSOpenPanel()
+            openPanel.canChooseFiles = true
+            openPanel.canChooseDirectories = false
+            openPanel.allowsMultipleSelection = false
+            openPanel.resolvesAliases = true
+            openPanel.allowedContentTypes = [UTType.image]
+            openPanel.beginSheetModal(for: view.window!) { [weak self] res in
+                guard res == .OK else {
+                    return
+                }
+                if let url = openPanel.url {
+                    self?.handleFile(url: url)
+                }
+            }
+        } else {
+            toolbarDataModel.activeToolIdentifier = identifier
         }
-        imageItemPropertyChange = nil
-        toolbarDataModel.imageItemProperty = nil
     }
 }
 
+// MARK: NSServicesMenuRequestor
 extension ViewController: NSServicesMenuRequestor {
     func readSelection(from pboard: NSPasteboard) -> Bool {
         guard canReadImage(from: pboard) else {
@@ -270,6 +294,7 @@ extension ViewController: NSServicesMenuRequestor {
     }
 }
 
+// MARK: NSMenuItemValidation
 extension ViewController: NSMenuItemValidation {
     func validateMenuItem(_ menuItem: NSMenuItem) -> Bool {
         if menuItem.action == #selector(paste(_:)) {
@@ -282,6 +307,7 @@ extension ViewController: NSMenuItemValidation {
     }
 }
 
+// MARK: NSDraggingDestination
 extension ViewController: NSDraggingDestination {
     func draggingEntered(_ sender: any NSDraggingInfo) -> NSDragOperation {
         return sender.draggingSourceOperationMask.intersection([.copy])
@@ -317,10 +343,11 @@ extension ViewController: NSDraggingDestination {
     }
 }
 
+// MARK: MTKViewDelegate
 extension ViewController: MTKViewDelegate {
 
     func mtkView(_ view: MTKView, drawableSizeWillChange size: CGSize) {
-        // empty
+        renderer.updateOnScreenDrawableSize(size)
     }
     
     func draw(in view: MTKView) {

@@ -19,6 +19,9 @@ final class Renderer {
     private var simplePipelineState: MTLRenderPipelineState
     private var texturePipelineState: MTLRenderPipelineState
     
+    private var onScreenRenderPassDescriptor: MTLRenderPassDescriptor!
+    private var onScreenResolvedTexture: MTLTexture!
+    
     init(with device: MTLDevice, pixelFormat: MTLPixelFormat) {
         self.device = device
         self.pixelFormat = pixelFormat
@@ -67,10 +70,13 @@ final class Renderer {
         return (renderPassDescriptor, resolvedTexture)
     }
     
+    func updateOnScreenDrawableSize(_ size: CGSize) {
+        (onScreenRenderPassDescriptor, onScreenResolvedTexture) = makeRenderPassDescriptor(size: size)
+    }
+    
     func render(in view: MTKView, items: [RenderItem], viewport: CGRect, debug: Bool = false) {
-        let (renderPassDescriptor, resolvedTexture) = makeRenderPassDescriptor(size: view.drawableSize)
         let commandBuffer = commandQueue.makeCommandBuffer()!
-        let encoder = commandBuffer.makeRenderCommandEncoder(descriptor: renderPassDescriptor)!
+        let encoder = commandBuffer.makeRenderCommandEncoder(descriptor: onScreenRenderPassDescriptor)!
         encoder.setTriangleFillMode(debug ? .lines : .fill)
         render(with: encoder, items: items, viewport: viewport)
         encoder.endEncoding()
@@ -81,7 +87,7 @@ final class Renderer {
             return;
         }
         let blitEncoder = commandBuffer.makeBlitCommandEncoder()!
-        blitEncoder.copy(from: resolvedTexture, to: currentDrawable.texture)
+        blitEncoder.copy(from: onScreenResolvedTexture, to: currentDrawable.texture)
         blitEncoder.endEncoding()
         commandBuffer.present(currentDrawable)
     }

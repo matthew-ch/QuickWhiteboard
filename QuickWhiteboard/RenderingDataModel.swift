@@ -20,13 +20,17 @@ struct PointSample {
 }
 
 final class DrawingItem: RenderItem {
-    private var points: [PointSample] = []
+    private(set) var points: [PointSample] = [] {
+        didSet {
+            vertexBuffer = nil
+            updateBoundingRect()
+        }
+    }
     
     let color: SIMD4<Float>
     let strokeWidth: Float
     
-    private(set) var boundingRect: CGRect = CGRect.zero
-    private var vertexes: [SIMD2<Float>] = []
+    private(set) var boundingRect: CGRect = CGRect(origin: .init(x: CGFloat.infinity, y: CGFloat.infinity), size: .zero)
     private var vertexBuffer: MTLBuffer?
     
     init(color: CGColor, strokeWidth: CGFloat) {
@@ -35,9 +39,23 @@ final class DrawingItem: RenderItem {
         self.color = .init(Float(components[0]), Float(components[1]), Float(components[2]), Float(color.numberOfComponents == 3 ? 1.0 : components[3]))
         self.strokeWidth = Float(strokeWidth)
     }
-
     
-    private func generateTriangles(location: SIMD2<Float>, lastLocation: SIMD2<Float>?) -> [SIMD2<Float>] {
+    private func updateBoundingRect() {
+        if points.count == 0 {
+            return
+        }
+        var minxy = SIMD2<Float>(x: Float.infinity, y: Float.infinity)
+        var maxxy = SIMD2<Float>(x: -Float.infinity, y: -Float.infinity)
+        for point in points {
+            minxy = simd_min(minxy, point.location)
+            maxxy = simd_max(maxxy, point.location)
+        }
+        boundingRect = CGRect(origin: .from(minxy), size: .from(maxxy - minxy))
+    }
+    
+    private func generateTriangles(point: PointSample, lastPoint: PointSample?) -> [SIMD2<Float>] {
+        let location = point.location
+        let lastLocation = lastPoint?.location
         var result: [SIMD2<Float>] = []
         let pointTriangleCount = max(Int(ceilf(Float.pi * strokeWidth / 2.0)), 4)
         let sectorAngle = Float.pi * 2.0 / Float(pointTriangleCount)
@@ -82,6 +100,16 @@ final class DrawingItem: RenderItem {
         return result
     }
     
+    private func generateVertexes() -> [SIMD2<Float>] {
+        var lastPoint: PointSample? = nil
+        var result: [SIMD2<Float>] = []
+        for point in points {
+            result.append(contentsOf: generateTriangles(point: point, lastPoint: lastPoint))
+            lastPoint = point
+        }
+        return result
+    }
+    
     func addPointSample(location: CGPoint) {
         let sampleLocation = SIMD2(Float(location.x), Float(location.y))
         let lastLocation = points.last?.location
@@ -91,34 +119,18 @@ final class DrawingItem: RenderItem {
             }
         }
         points.append(PointSample(location: sampleLocation))
-        var x_left = boundingRect.minX
-        var y_bottom = boundingRect.minY
-        var x_right = boundingRect.maxX
-        var y_top = boundingRect.maxY
-        let vertexes = generateTriangles(location: sampleLocation, lastLocation: lastLocation)
-        for vertex in vertexes {
-            if self.vertexes.count == 0 {
-                x_left = CGFloat(vertex.x)
-                x_right = CGFloat(vertex.x)
-                y_bottom = CGFloat(vertex.y)
-                y_top = CGFloat(vertex.y)
-            } else {
-                x_left = min(CGFloat(vertex.x), x_left)
-                x_right = max(CGFloat(vertex.x), x_right)
-                y_bottom = min(CGFloat(vertex.y), y_bottom)
-                y_top = max(CGFloat(vertex.y), y_top)
-            }
-        }
-        self.vertexes.append(contentsOf: vertexes)
-        boundingRect = CGRect(x: x_left, y: y_bottom, width: x_right - x_left, height: y_top - y_bottom)
-        vertexBuffer = nil
+    }
+    
+    func popLastSample() {
+        _ = points.popLast()
     }
     
     func upload(to device: MTLDevice) -> (vetexBuffer: MTLBuffer, vertexCount: Int) {
         if vertexBuffer == nil {
+            var vertexes = generateVertexes()
             vertexBuffer = device.makeBuffer(bytes: &vertexes, length: MemoryLayout<SIMD2<Float>>.size * max(vertexes.count, 1))!
         }
-        return (vertexBuffer!, vertexes.count)
+        return (vertexBuffer!, vertexBuffer!.length / MemoryLayout<SIMD2<Float>>.size)
     }
 }
 
