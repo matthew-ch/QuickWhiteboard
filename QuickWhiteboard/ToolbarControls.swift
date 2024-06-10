@@ -28,14 +28,9 @@ struct ExportButton: NSViewRepresentable {
     }
     
     func updateNSView(_ nsView: NSButton, context: Context) {
-        nsView.target = context.coordinator
     }
     
     typealias NSViewType = NSButton
-    
-    func makeCoordinator() -> ToolbarDelegate? {
-        toolbarDelegate
-    }
 }
 
 struct MainToolbar: View {
@@ -45,6 +40,15 @@ struct MainToolbar: View {
 
     var body: some View {
         HStack {
+            ForEach(ToolIdentifier.allCases) { id in
+                Button(action: {
+                    delegate?.onClickTool(identifier: id)
+                }, label: {
+                    Image(systemName: id.symbolName)
+                        .foregroundColor(id == dataModel.activeToolIdentifier ? Color.accentColor : Color.primary)
+                })
+            }
+            Spacer()
             Slider(value: $dataModel.strokeWidth, in: 1...32) {
                 Text("Stroke")
                     .font(.caption)
@@ -56,15 +60,6 @@ struct MainToolbar: View {
                     .font(.caption)
                     .foregroundColor(.secondary)
             })
-            Spacer()
-            ForEach(ToolIdentifier.allCases) { id in
-                Button(action: {
-                    delegate?.onClickTool(identifier: id)
-                }, label: {
-                    Image(systemName: id.symbolName)
-                        .foregroundColor(id == dataModel.activeToolIdentifier ? Color.accentColor : Color.primary)
-                })
-            }
             Spacer()
             #if DEBUG
             Button(action: {

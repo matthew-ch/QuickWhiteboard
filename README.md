@@ -17,7 +17,7 @@
 
 ## Screenshot
 
-<img src="./Screenshot.png" width="796">
+<img src="./Screenshot.png" width="912">
 
 ## License
 
