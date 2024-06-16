@@ -135,7 +135,7 @@ class ViewController: NSViewController {
         origin.x -= event.scrollingDeltaX * factor
         origin.y += event.scrollingDeltaY * factor
         origin = origin.rounded
-        canvasView.needsDisplay = true
+        setNeedsDisplay()
     }
     
     private func convertEventLocation(_ location: NSPoint) -> CGPoint {
@@ -166,16 +166,32 @@ class ViewController: NSViewController {
         pasteboard.writeObjects([image])
     }
     
+    @IBAction func clear(_ sender: Any) {
+        guard items.count > 0 else {
+            return
+        }
+        let removedItems = items as NSArray
+        items = []
+        undoManager?.registerUndo(withTarget: self, selector: #selector(restoreItems(_:)), object: removedItems)
+        setNeedsDisplay()
+    }
+
+    @objc func restoreItems(_ removedItems: Any) {
+        items = removedItems as! NSArray as! Array<any RenderItem>
+        undoManager?.registerUndo(withTarget: self, selector: #selector(clear(_:)), object: nil)
+        setNeedsDisplay()
+    }
+
     @objc func addItem(_ item: Any) {
         items.append(item as! RenderItem)
         undoManager?.registerUndo(withTarget: self, selector: #selector(removeLastItem(_:)), object: nil)
-        canvasView.needsDisplay = true
+        setNeedsDisplay()
     }
     
     @objc func removeLastItem(_: Any?) {
         if let item = items.popLast() {
             undoManager?.registerUndo(withTarget: self, selector: #selector(addItem(_:)), object: item)
-            canvasView.needsDisplay = true
+            setNeedsDisplay()
         }
     }
     
@@ -243,7 +259,7 @@ extension ViewController: ToolbarDelegate {
 
     func toggleDebug() {
         debug.toggle()
-        canvasView.needsDisplay = true
+        setNeedsDisplay()
     }
     
     @objc
@@ -301,6 +317,9 @@ extension ViewController: NSMenuItemValidation {
             return pendingItem == nil && canReadImage(from: NSPasteboard.general)
         }
         if menuItem.action == #selector(copy(_:)) {
+            return pendingItem == nil && items.count > 0
+        }
+        if menuItem.action == #selector(clear(_:)) {
             return pendingItem == nil && items.count > 0
         }
         return true

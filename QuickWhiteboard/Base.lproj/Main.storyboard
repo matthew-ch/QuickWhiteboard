@@ -94,6 +94,15 @@
                                             </connections>
                                         </menuItem>
                                         <menuItem isSeparatorItem="YES" id="WRV-NI-Exz"/>
+                                        <menuItem title="Clear" id="VLh-lp-Pgd">
+                                            <string key="keyEquivalent" base64-UTF8="YES">
+CA
+</string>
+                                            <connections>
+                                                <action selector="clear:" target="Ady-hI-5gd" id="9mz-QF-lEK"/>
+                                            </connections>
+                                        </menuItem>
+                                        <menuItem isSeparatorItem="YES" id="pNZ-lT-u7z"/>
                                         <menuItem title="Copy" keyEquivalent="c" id="x3v-GG-iWU">
                                             <connections>
                                                 <action selector="copy:" target="Ady-hI-5gd" id="G1f-GL-Joy"/>
