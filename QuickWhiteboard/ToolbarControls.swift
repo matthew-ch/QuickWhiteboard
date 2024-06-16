@@ -15,7 +15,7 @@ protocol ToolbarDelegate: AnyObject {
 }
 
 struct ExportButton: NSViewRepresentable {
-    weak var toolbarDelegate: ToolbarDelegate?
+    weak var toolbarDelegate: (any ToolbarDelegate)?
 
     func makeNSView(context: Context) -> NSButton {
         let button = NSButton(
@@ -36,7 +36,7 @@ struct ExportButton: NSViewRepresentable {
 struct MainToolbar: View {
     
     @ObservedObject var dataModel: ToolbarDataModel
-    weak var delegate: ToolbarDelegate?
+    weak var delegate: (any ToolbarDelegate)?
 
     var body: some View {
         HStack {
@@ -79,7 +79,7 @@ private let presetRotations: [Int] = [90, 180, 270]
 
 struct ImageEditToolbar: View {
     @ObservedObject var imageItemProperty: ImageItemProperty
-    weak var delegate: ToolbarDelegate?
+    weak var delegate: (any ToolbarDelegate)?
     
     var body: some View {
         HStack {
@@ -133,7 +133,7 @@ struct ImageEditToolbar: View {
 struct ToolbarControls: View {
     
     @ObservedObject var dataModel: ToolbarDataModel
-    weak var delegate: ToolbarDelegate?
+    weak var delegate: (any ToolbarDelegate)?
     
     var body: some View {
         if dataModel.activeToolIdentifier == .image {

@@ -12,17 +12,17 @@ import MetalKit
 private let sampleCount = 4
 
 final class Renderer {
-    private var device: MTLDevice
+    private var device: any MTLDevice
     private var pixelFormat: MTLPixelFormat
-    private var commandQueue: MTLCommandQueue
+    private var commandQueue: any MTLCommandQueue
     
-    private var simplePipelineState: MTLRenderPipelineState
-    private var texturePipelineState: MTLRenderPipelineState
+    private var simplePipelineState: any MTLRenderPipelineState
+    private var texturePipelineState: any MTLRenderPipelineState
     
     private var onScreenRenderPassDescriptor: MTLRenderPassDescriptor!
-    private var onScreenResolvedTexture: MTLTexture!
+    private var onScreenResolvedTexture: (any MTLTexture)!
     
-    init(with device: MTLDevice, pixelFormat: MTLPixelFormat) {
+    init(with device: any MTLDevice, pixelFormat: MTLPixelFormat) {
         self.device = device
         self.pixelFormat = pixelFormat
         commandQueue = device.makeCommandQueue()!
@@ -47,7 +47,7 @@ final class Renderer {
         texturePipelineState = try! device.makeRenderPipelineState(descriptor: pipelineDescriptor)
     }
     
-    private func makeRenderPassDescriptor(size: CGSize) -> (MTLRenderPassDescriptor, MTLTexture) {
+    private func makeRenderPassDescriptor(size: CGSize) -> (MTLRenderPassDescriptor, any MTLTexture) {
         let textureDescriptor = MTLTextureDescriptor.texture2DDescriptor(pixelFormat: pixelFormat, width: Int(size.width), height: Int(size.height), mipmapped: false)
         textureDescriptor.usage = [.renderTarget, .shaderRead]
         textureDescriptor.textureType = .type2DMultisample
@@ -74,7 +74,7 @@ final class Renderer {
         (onScreenRenderPassDescriptor, onScreenResolvedTexture) = makeRenderPassDescriptor(size: size)
     }
     
-    func render(in view: MTKView, items: [RenderItem], viewport: CGRect, debug: Bool = false) {
+    func render(in view: MTKView, items: [any RenderItem], viewport: CGRect, debug: Bool = false) {
         let commandBuffer = commandQueue.makeCommandBuffer()!
         let encoder = commandBuffer.makeRenderCommandEncoder(descriptor: onScreenRenderPassDescriptor)!
         encoder.setTriangleFillMode(debug ? .lines : .fill)
@@ -92,7 +92,7 @@ final class Renderer {
         commandBuffer.present(currentDrawable)
     }
     
-    func renderOffscreen(of size: CGSize, items: [RenderItem], viewport: CGRect) -> MTLTexture {
+    func renderOffscreen(of size: CGSize, items: [any RenderItem], viewport: CGRect) -> any MTLTexture {
         let (renderPassDescriptor, resolvedTexture) = makeRenderPassDescriptor(size: size)
         let commandBuffer = commandQueue.makeCommandBuffer()!
         let encoder = commandBuffer.makeRenderCommandEncoder(descriptor: renderPassDescriptor)!
@@ -103,7 +103,7 @@ final class Renderer {
         return resolvedTexture
     }
     
-    private func render(with encoder: MTLRenderCommandEncoder, items: [RenderItem], viewport: CGRect) {
+    private func render(with encoder: MTLRenderCommandEncoder, items: [any RenderItem], viewport: CGRect) {
         var frameRect = SIMD4(Float(viewport.minX), Float(viewport.minY), Float(viewport.width), Float(viewport.height))
         encoder.setVertexBytes(&frameRect, length: MemoryLayout<SIMD4<Float>>.size, index: 0)
         for item in items {

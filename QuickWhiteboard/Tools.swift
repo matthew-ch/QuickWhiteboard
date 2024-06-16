@@ -11,15 +11,15 @@ import Combine
 
 protocol ToolDelegate: AnyObject {
     func setNeedsDisplay() -> Void
-    func commit(item: RenderItem) -> Void
+    func commit(item: any RenderItem) -> Void
     var toolbarDataModel: ToolbarDataModel { get }
     func setDefaultTool() -> Void
 }
 
 protocol Tool: AnyObject {
-    init(delegate: ToolDelegate)
-    var delegate: ToolDelegate { get }
-    var editingItem: RenderItem? { get }
+    init(delegate: any ToolDelegate)
+    var delegate: any ToolDelegate { get }
+    var editingItem: (any RenderItem)? { get }
     func commit() -> Void
     func mouseDown(with event: NSEvent, location: CGPoint) -> Void
     func mouseUp(with event: NSEvent, location: CGPoint) -> Void
@@ -29,12 +29,12 @@ protocol Tool: AnyObject {
 
 class FreehandTool: Tool {
     fileprivate var _editingItem: DrawingItem? = nil
-    var editingItem: RenderItem? {
+    var editingItem: (any RenderItem)? {
         _editingItem
     }
-    unowned let delegate: ToolDelegate
+    unowned let delegate: any ToolDelegate
     
-    required init(delegate: ToolDelegate) {
+    required init(delegate: any ToolDelegate) {
         self.delegate = delegate
     }
 
@@ -81,14 +81,14 @@ class LineTool: FreehandTool {
 
 class ImageTool: Tool {
     private var _editingItem: ImageItem? = nil
-    required init(delegate: ToolDelegate) {
+    required init(delegate: any ToolDelegate) {
         self.delegate = delegate
     }
     
-    unowned let delegate: ToolDelegate
+    unowned let delegate: any ToolDelegate
     private var imageItemPropertyChange: AnyCancellable?
 
-    var editingItem: RenderItem? {
+    var editingItem: (any RenderItem)? {
         _editingItem
     }
     

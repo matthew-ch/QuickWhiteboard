@@ -16,7 +16,7 @@ class ViewController: NSViewController {
     @IBOutlet weak var canvasView: CanvasView!
     @IBOutlet weak var toolbarContainerView: NSView!
 
-    private var items: [RenderItem] = []
+    private var items: [any RenderItem] = []
     private var renderer: Renderer!
     private var origin: CGPoint = .zero
     
@@ -24,7 +24,7 @@ class ViewController: NSViewController {
     private lazy var lineTool = LineTool(delegate: self)
     private lazy var imageTool = ImageTool(delegate: self)
 
-    var activeTool: Tool {
+    var activeTool: any Tool {
         switch toolbarDataModel.activeToolIdentifier {
         case .freehand:
             freehandTool
@@ -35,7 +35,7 @@ class ViewController: NSViewController {
         }
     }
     
-    var pendingItem: RenderItem? {
+    var pendingItem: (any RenderItem)? {
         activeTool.editingItem
     }
     
@@ -233,7 +233,7 @@ extension ViewController: ToolDelegate {
         canvasView.needsDisplay = true
     }
     
-    func commit(item: RenderItem) {
+    func commit(item: any RenderItem) {
         addItem(item)
     }
 }

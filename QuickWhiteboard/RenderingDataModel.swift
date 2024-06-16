@@ -31,7 +31,7 @@ final class DrawingItem: RenderItem {
     let strokeWidth: Float
     
     private(set) var boundingRect: CGRect = CGRect(origin: .init(x: CGFloat.infinity, y: CGFloat.infinity), size: .zero)
-    private var vertexBuffer: MTLBuffer?
+    private var vertexBuffer: (any MTLBuffer)?
     
     init(color: CGColor, strokeWidth: CGFloat) {
         assert(color.colorSpace?.model == .rgb && color.numberOfComponents >= 3)
@@ -125,7 +125,7 @@ final class DrawingItem: RenderItem {
         _ = points.popLast()
     }
     
-    func upload(to device: MTLDevice) -> (vetexBuffer: MTLBuffer, vertexCount: Int) {
+    func upload(to device: MTLDevice) -> (vetexBuffer: any MTLBuffer, vertexCount: Int) {
         if vertexBuffer == nil {
             var vertexes = generateVertexes()
             vertexBuffer = device.makeBuffer(bytes: &vertexes, length: MemoryLayout<SIMD2<Float>>.size * max(vertexes.count, 1))!
@@ -157,9 +157,9 @@ final class ImageItem: RenderItem {
     }
     private(set) var boundingRect: CGRect = .zero
     
-    private var texture: MTLTexture?
-    private var vertexBuffer: MTLBuffer?
-    private var uvBuffer: MTLBuffer?
+    private var texture: (any MTLTexture)?
+    private var vertexBuffer: (any MTLBuffer)?
+    private var uvBuffer: (any MTLBuffer)?
     
     static var textureLoader: MTKTextureLoader!
     static let uvs: [SIMD2<Float>] = [
@@ -193,7 +193,7 @@ final class ImageItem: RenderItem {
         boundingRect = .init(origin: .from(center - half_size), size: .from(half_size * 2.0))
     }
 
-    func upload(to device: MTLDevice) -> (texture: MTLTexture, vertexBuffer: MTLBuffer, uvBuffer: MTLBuffer, vertexCount: Int) {
+    func upload(to device: MTLDevice) -> (texture: any MTLTexture, vertexBuffer: any MTLBuffer, uvBuffer: any MTLBuffer, vertexCount: Int) {
         if Self.textureLoader == nil {
             Self.textureLoader = MTKTextureLoader(device: device)
         }
