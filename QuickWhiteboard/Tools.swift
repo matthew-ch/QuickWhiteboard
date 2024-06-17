@@ -9,17 +9,20 @@ import Foundation
 import AppKit
 import Combine
 
+protocol ToolEditingItem: AnyObject {}
+
 protocol ToolDelegate: AnyObject {
     func setNeedsDisplay() -> Void
-    func commit(item: any RenderItem) -> Void
+    func commit(item: any ToolEditingItem) -> Void
     var toolbarDataModel: ToolbarDataModel { get }
     func setDefaultTool() -> Void
+    var renderItems: [any RenderItem] { get }
 }
 
 protocol Tool: AnyObject {
     init(delegate: any ToolDelegate)
     var delegate: any ToolDelegate { get }
-    var editingItem: (any RenderItem)? { get }
+    var editingItem: (any ToolEditingItem)? { get }
     func commit() -> Void
     func mouseDown(with event: NSEvent, location: CGPoint) -> Void
     func mouseUp(with event: NSEvent, location: CGPoint) -> Void
@@ -29,7 +32,7 @@ protocol Tool: AnyObject {
 
 class FreehandTool: Tool {
     fileprivate var _editingItem: DrawingItem? = nil
-    var editingItem: (any RenderItem)? {
+    var editingItem: (any ToolEditingItem)? {
         _editingItem
     }
     unowned let delegate: any ToolDelegate
@@ -88,7 +91,7 @@ class ImageTool: Tool {
     unowned let delegate: any ToolDelegate
     private var imageItemPropertyChange: AnyCancellable?
 
-    var editingItem: (any RenderItem)? {
+    var editingItem: (any ToolEditingItem)? {
         _editingItem
     }
     
@@ -130,8 +133,80 @@ class ImageTool: Tool {
     }
     
     func setCursor() {
-        NSCursor(image: NSImage(systemSymbolName: "arrow.up.and.down.and.arrow.left.and.right", accessibilityDescription: nil)!, hotSpot: .zero).set()
+        let image = NSImage(systemSymbolName: "arrow.up.and.down.and.arrow.left.and.right", accessibilityDescription: nil)!
+        NSCursor(image: image, hotSpot: CGPoint.from(image.size.float2 / 2.0)).set()
     }
     
     
+}
+
+let eraserRadius = 5.0
+
+class EraserTool: Tool {
+    private var _editingItem: ErasedItems? = nil
+    
+    required init(delegate: any ToolDelegate) {
+        self.delegate = delegate
+    }
+    
+    unowned let delegate: any ToolDelegate
+    
+    var editingItem: (any ToolEditingItem)? {
+        _editingItem
+    }
+    
+    func commit() {
+        if let item = _editingItem.take(), !item.selected.isEmpty {
+            delegate.commit(item: item)
+        }
+    }
+    
+    private func queryIntersectedItem(location: CGPoint) -> RenderItem? {
+        for renderItem in delegate.renderItems.reversed() {
+            if renderItem.hidden || !renderItem.boundingRect.insetBy(dx: -eraserRadius, dy: -eraserRadius).contains(location) {
+                continue
+            }
+            guard let drawingItem = renderItem as? DrawingItem, !drawingItem.points.isEmpty else {
+                continue
+            }
+            var previousPoint = drawingItem.points[0]
+            let distanceTest = drawingItem.strokeWidth / 2.0 + Float(eraserRadius)
+            for point in drawingItem.points {
+                if distanceFromPointToLineSegment(point: location.float2, segmentPoints: previousPoint.location, point.location) <= distanceTest {
+                    return renderItem
+                }
+                previousPoint = point
+            }
+        }
+        return nil
+    }
+    
+    func mouseDown(with event: NSEvent, location: CGPoint) {
+        let item = ErasedItems()
+        if let renderItem = queryIntersectedItem(location: location) {
+            renderItem.hidden = true
+            item.selected.append(renderItem)
+            delegate.setNeedsDisplay()
+        }
+        _editingItem = item
+    }
+    
+    func mouseUp(with event: NSEvent, location: CGPoint) {
+        commit()
+    }
+    
+    func mouseDragged(with event: NSEvent, location: CGPoint) {
+        if let item = _editingItem,
+            let renderItem = queryIntersectedItem(location: location) {
+            renderItem.hidden = true
+            item.selected.append(renderItem)
+            delegate.setNeedsDisplay()
+        }
+    }
+    
+    func setCursor() {
+        let image = NSImage(systemSymbolName: ToolIdentifier.eraser.symbolName, accessibilityDescription: nil)!
+        NSCursor(image: image, hotSpot: CGPoint.from(image.size.float2 / 2.0)).set()
+    }
+
 }

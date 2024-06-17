@@ -107,7 +107,7 @@ final class Renderer {
         var frameRect = SIMD4(Float(viewport.minX), Float(viewport.minY), Float(viewport.width), Float(viewport.height))
         encoder.setVertexBytes(&frameRect, length: MemoryLayout<SIMD4<Float>>.size, index: 0)
         for item in items {
-            if !viewport.intersects(item.boundingRect) {
+            if item.hidden || !viewport.intersects(item.boundingRect) {
                 continue
             }
             if let drawing = item as? DrawingItem {

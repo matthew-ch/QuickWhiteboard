@@ -10,6 +10,7 @@
 		C90CF8D62C154FDB00B2D88C /* Tools.swift in Sources */ = {isa = PBXBuildFile; fileRef = C90CF8D52C154FDB00B2D88C /* Tools.swift */; };
 		C90CF8D82C15884600B2D88C /* OptionalExtension.swift in Sources */ = {isa = PBXBuildFile; fileRef = C90CF8D72C15884600B2D88C /* OptionalExtension.swift */; };
 		C90CF8DA2C158C4600B2D88C /* ToolbarDataModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C90CF8D92C158C4600B2D88C /* ToolbarDataModel.swift */; };
+		C90CF8DC2C204DB000B2D88C /* MathUtility.swift in Sources */ = {isa = PBXBuildFile; fileRef = C90CF8DB2C204DB000B2D88C /* MathUtility.swift */; };
 		C9B1C7542BD92A6F0013C568 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9B1C7532BD92A6F0013C568 /* AppDelegate.swift */; };
 		C9B1C7562BD92A6F0013C568 /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9B1C7552BD92A6F0013C568 /* ViewController.swift */; };
 		C9B1C7582BD92A700013C568 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C9B1C7572BD92A700013C568 /* Assets.xcassets */; };
@@ -32,6 +33,7 @@
 		C90CF8D52C154FDB00B2D88C /* Tools.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tools.swift; sourceTree = "<group>"; };
 		C90CF8D72C15884600B2D88C /* OptionalExtension.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OptionalExtension.swift; sourceTree = "<group>"; };
 		C90CF8D92C158C4600B2D88C /* ToolbarDataModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToolbarDataModel.swift; sourceTree = "<group>"; };
+		C90CF8DB2C204DB000B2D88C /* MathUtility.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MathUtility.swift; sourceTree = "<group>"; };
 		C9B1C7502BD92A6F0013C568 /* QuickWhiteboard.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = QuickWhiteboard.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		C9B1C7532BD92A6F0013C568 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		C9B1C7552BD92A6F0013C568 /* ViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewController.swift; sourceTree = "<group>"; };
@@ -103,6 +105,7 @@
 				C90CF8D52C154FDB00B2D88C /* Tools.swift */,
 				C9B1C7552BD92A6F0013C568 /* ViewController.swift */,
 				C9B1C7622BDA6EC30013C568 /* WindowController.swift */,
+				C90CF8DB2C204DB000B2D88C /* MathUtility.swift */,
 			);
 			path = QuickWhiteboard;
 			sourceTree = "<group>";
@@ -195,6 +198,7 @@
 				C9CC709E2BE14874001C0351 /* CanvasView.swift in Sources */,
 				C9B1C7562BD92A6F0013C568 /* ViewController.swift in Sources */,
 				C9B1C7632BDA6EC30013C568 /* WindowController.swift in Sources */,
+				C90CF8DC2C204DB000B2D88C /* MathUtility.swift in Sources */,
 				C9B1C7542BD92A6F0013C568 /* AppDelegate.swift in Sources */,
 				C90CF8D82C15884600B2D88C /* OptionalExtension.swift in Sources */,
 				C9B1C76E2BDA900F0013C568 /* Renderer.swift in Sources */,

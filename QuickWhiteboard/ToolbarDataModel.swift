@@ -15,6 +15,7 @@ enum ToolIdentifier: Equatable, Hashable, Identifiable, CaseIterable {
     
     case freehand
     case line
+    case eraser
     case image
     
     var symbolName: String {
@@ -23,6 +24,8 @@ enum ToolIdentifier: Equatable, Hashable, Identifiable, CaseIterable {
             "scribble"
         case .line:
             "line.diagonal"
+        case .eraser:
+            "xmark.circle"
         case .image:
             "photo"
         }

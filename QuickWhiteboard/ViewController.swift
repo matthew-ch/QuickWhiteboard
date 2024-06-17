@@ -22,6 +22,7 @@ class ViewController: NSViewController {
     
     private lazy var freehandTool = FreehandTool(delegate: self)
     private lazy var lineTool = LineTool(delegate: self)
+    private lazy var eraserTool = EraserTool(delegate: self)
     private lazy var imageTool = ImageTool(delegate: self)
 
     var activeTool: any Tool {
@@ -30,13 +31,15 @@ class ViewController: NSViewController {
             freehandTool
         case .line:
             lineTool
+        case .eraser:
+            eraserTool
         case .image:
             imageTool
         }
     }
     
-    var pendingItem: (any RenderItem)? {
-        activeTool.editingItem
+    var isEditing: Bool {
+        activeTool.editingItem != nil
     }
     
     let toolbarDataModel = ToolbarDataModel(strokeWidth: 2.0, color: .init(red: 0.1, green: 0.2, blue: 0.7))
@@ -167,16 +170,16 @@ class ViewController: NSViewController {
     }
     
     @IBAction func clear(_ sender: Any) {
-        guard items.count > 0 else {
+        guard !items.isEmpty else {
             return
         }
         let removedItems = items as NSArray
         items = []
-        undoManager?.registerUndo(withTarget: self, selector: #selector(restoreItems(_:)), object: removedItems)
+        undoManager?.registerUndo(withTarget: self, selector: #selector(restoreClearedItems(_:)), object: removedItems)
         setNeedsDisplay()
     }
 
-    @objc func restoreItems(_ removedItems: Any) {
+    @objc func restoreClearedItems(_ removedItems: Any) {
         items = removedItems as! NSArray as! Array<any RenderItem>
         undoManager?.registerUndo(withTarget: self, selector: #selector(clear(_:)), object: nil)
         setNeedsDisplay()
@@ -195,6 +198,18 @@ class ViewController: NSViewController {
         }
     }
     
+    @objc func eraseItems(_ item: Any) {
+        (item as! ErasedItems).erase()
+        undoManager?.registerUndo(withTarget: self, selector: #selector(restoreErasedItems(_:)), object: item)
+        setNeedsDisplay()
+    }
+    
+    @objc func restoreErasedItems(_ item: Any) {
+        (item as! ErasedItems).restore()
+        undoManager?.registerUndo(withTarget: self, selector: #selector(eraseItems(_:)), object: item)
+        setNeedsDisplay()
+    }
+
     private func addImage(_ image: NSImage) {
         let size = image.size
         let scale = image.representations.first is NSPDFImageRep ? 2.0 : 1.0
@@ -241,6 +256,10 @@ class ViewController: NSViewController {
 
 // MARK: ToolDelegate
 extension ViewController: ToolDelegate {
+    var renderItems: [any RenderItem] {
+        items
+    }
+    
     func setDefaultTool() {
         toolbarDataModel.activeToolIdentifier = .freehand
     }
@@ -249,8 +268,12 @@ extension ViewController: ToolDelegate {
         canvasView.needsDisplay = true
     }
     
-    func commit(item: any RenderItem) {
-        addItem(item)
+    func commit(item: any ToolEditingItem) {
+        if let item = item as? RenderItem {
+            addItem(item)
+        } else if let item = item as? ErasedItems {
+            eraseItems(item)
+        }
     }
 }
 
@@ -264,7 +287,7 @@ extension ViewController: ToolbarDelegate {
     
     @objc
     func exportCanvas(_ sender: NSButton) {
-        guard items.count > 0 else {
+        guard !items.isEmpty else {
             let alert = NSAlert()
             alert.messageText = "No content yet"
             alert.beginSheetModal(for: view.window!)
@@ -314,13 +337,13 @@ extension ViewController: NSServicesMenuRequestor {
 extension ViewController: NSMenuItemValidation {
     func validateMenuItem(_ menuItem: NSMenuItem) -> Bool {
         if menuItem.action == #selector(paste(_:)) {
-            return pendingItem == nil && canReadImage(from: NSPasteboard.general)
+            return isEditing && canReadImage(from: NSPasteboard.general)
         }
         if menuItem.action == #selector(copy(_:)) {
-            return pendingItem == nil && items.count > 0
+            return isEditing && !items.isEmpty
         }
         if menuItem.action == #selector(clear(_:)) {
-            return pendingItem == nil && items.count > 0
+            return isEditing && !items.isEmpty
         }
         return true
     }
@@ -370,7 +393,7 @@ extension ViewController: MTKViewDelegate {
     }
     
     func draw(in view: MTKView) {
-        let renderItems = items + (pendingItem.map{ [$0] } ?? [])
+        let renderItems = items + ((activeTool.editingItem as? RenderItem).map{ [$0] } ?? [])
         renderer.render(in: view, items: renderItems, viewport: CGRect(origin: origin, size: canvasView.bounds.size), debug: debug)
     }
     

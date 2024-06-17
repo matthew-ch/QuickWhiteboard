@@ -11,12 +11,29 @@ import Metal
 import MetalKit
 import simd
 
-protocol RenderItem: AnyObject {
+protocol RenderItem: AnyObject, ToolEditingItem {
     var boundingRect: CGRect { get }
+    var hidden: Bool { get set }
 }
 
 struct PointSample {
     let location: SIMD2<Float>
+}
+
+final class ErasedItems: ToolEditingItem {
+    var selected: [any RenderItem] = []
+    
+    func erase() {
+        for item in selected {
+            item.hidden = true
+        }
+    }
+    
+    func restore() {
+        for item in selected {
+            item.hidden = false
+        }
+    }
 }
 
 final class DrawingItem: RenderItem {
@@ -31,6 +48,8 @@ final class DrawingItem: RenderItem {
     let strokeWidth: Float
     
     private(set) var boundingRect: CGRect = CGRect(origin: .init(x: CGFloat.infinity, y: CGFloat.infinity), size: .zero)
+    var hidden: Bool = false
+
     private var vertexBuffer: (any MTLBuffer)?
     
     init(color: CGColor, strokeWidth: CGFloat) {
@@ -41,14 +60,14 @@ final class DrawingItem: RenderItem {
     }
     
     private func updateBoundingRect() {
-        if points.count == 0 {
+        if points.isEmpty {
             return
         }
         var minxy = SIMD2<Float>(x: Float.infinity, y: Float.infinity)
         var maxxy = SIMD2<Float>(x: -Float.infinity, y: -Float.infinity)
         for point in points {
-            minxy = simd_min(minxy, point.location)
-            maxxy = simd_max(maxxy, point.location)
+            minxy = simd_min(minxy, point.location - strokeWidth)
+            maxxy = simd_max(maxxy, point.location + strokeWidth)
         }
         boundingRect = CGRect(origin: .from(minxy), size: .from(maxxy - minxy))
     }
@@ -156,7 +175,8 @@ final class ImageItem: RenderItem {
         }
     }
     private(set) var boundingRect: CGRect = .zero
-    
+    var hidden: Bool = false
+
     private var texture: (any MTLTexture)?
     private var vertexBuffer: (any MTLBuffer)?
     private var uvBuffer: (any MTLBuffer)?
@@ -179,12 +199,7 @@ final class ImageItem: RenderItem {
     }
     
     private func updateBoudingRect() {
-        let cos_value = cos(rotation) * scale
-        let sin_value = sin(rotation) * scale
-        let matrix = simd_float2x2(rows: [
-            .init(cos_value, -sin_value),
-            .init(sin_value, cos_value),
-        ])
+        let matrix = matrix2DRotateAndScale(radian: rotation, scale: scale)
         let p1 = simd_mul(matrix, size * 0.5)
         let p2 = simd_mul(matrix, size * SIMD2(0.5, -0.5))
         let dx = max(abs(p1.x), abs(p2.x))
@@ -206,12 +221,7 @@ final class ImageItem: RenderItem {
             ])
         }
         if vertexBuffer == nil {
-            let cos_value = cos(rotation) * scale
-            let sin_value = sin(rotation) * scale
-            let matrix = simd_float2x2(rows: [
-                .init(cos_value, -sin_value),
-                .init(sin_value, cos_value),
-            ])
+            let matrix = matrix2DRotateAndScale(radian: rotation, scale: scale)
             let p1 = simd_mul(matrix, size * 0.5)
             let p2 = simd_mul(matrix, size * SIMD2(0.5, -0.5))
 
