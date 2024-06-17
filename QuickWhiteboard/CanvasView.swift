@@ -15,7 +15,11 @@ class CanvasView: MTKView {
     }
     
     override var mouseDownCanMoveWindow: Bool {
-        return false
+        false
+    }
+    
+    override var acceptsFirstResponder: Bool {
+        true
     }
     
     override func cursorUpdate(with event: NSEvent) {
@@ -65,6 +69,10 @@ class CanvasView: MTKView {
             }
         }
         return false
+    }
+    
+    override func keyDown(with event: NSEvent) {
+        viewController?.keyDown(with: event)
     }
     
 }

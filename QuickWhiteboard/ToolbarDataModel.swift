@@ -30,6 +30,32 @@ enum ToolIdentifier: Equatable, Hashable, Identifiable, CaseIterable {
             "photo"
         }
     }
+    
+    var shortcutKey: String {
+        switch self {
+        case .freehand:
+            "F"
+        case .line:
+            "S"
+        case .eraser:
+            "E"
+        case .image:
+            "I"
+        }
+    }
+    
+    var tooltip: String {
+        switch self {
+        case .freehand:
+            "Draw freehand (\(shortcutKey))"
+        case .line:
+            "Draw Line (\(shortcutKey))"
+        case .eraser:
+            "Erase drawings (\(shortcutKey))"
+        case .image:
+            "Insert image (\(shortcutKey))"
+        }
+    }
 }
 
 class ImageItemProperty: ObservableObject {

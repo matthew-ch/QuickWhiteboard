@@ -132,6 +132,24 @@ class ViewController: NSViewController {
     }
     
     // MARK: event handling
+    
+    override func keyDown(with event: NSEvent) {
+        guard !isEditing, event.modifierFlags.intersection([.shift, .control, .control]).isEmpty, !event.isARepeat else {
+            return
+        }
+        guard let chars = event.charactersIgnoringModifiers?.lowercased() else {
+            return
+        }
+        for toolIdentifier in ToolIdentifier.allCases {
+            if toolIdentifier.shortcutKey.lowercased() == chars {
+                onClickTool(identifier: toolIdentifier)
+                if mouseIsInsideCanvas() {
+                    activeTool.setCursor()
+                }
+                break;
+            }
+        }
+    }
 
     func canvasViewScrollWheel(with event: NSEvent) {
         let factor = event.hasPreciseScrollingDeltas ? 1.0 : 5.0
@@ -208,6 +226,14 @@ class ViewController: NSViewController {
         (item as! ErasedItems).restore()
         undoManager?.registerUndo(withTarget: self, selector: #selector(eraseItems(_:)), object: item)
         setNeedsDisplay()
+    }
+    
+    // MARK: utility methods
+    
+    private func mouseIsInsideCanvas() -> Bool {
+        let mousePosition = view.window!.mouseLocationOutsideOfEventStream
+        let location = canvasView.convert(mousePosition, from: nil)
+        return canvasView.bounds.contains(location)
     }
 
     private func addImage(_ image: NSImage) {

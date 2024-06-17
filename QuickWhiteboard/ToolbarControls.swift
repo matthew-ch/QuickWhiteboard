@@ -47,6 +47,7 @@ struct MainToolbar: View {
                     Image(systemName: id.symbolName)
                         .foregroundColor(id == dataModel.activeToolIdentifier ? Color.accentColor : Color.primary)
                 })
+                .help(id.tooltip)
             }
             Spacer()
             Slider(value: $dataModel.strokeWidth, in: 1...32) {
@@ -67,8 +68,10 @@ struct MainToolbar: View {
             }, label: {
                 Image(systemName: "ladybug")
             })
+            .help("Toggle debug")
             #endif
             ExportButton(toolbarDelegate: delegate)
+                .help("Export")
         }
         .padding(.horizontal)
     }
