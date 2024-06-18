@@ -10,6 +10,13 @@
 - Import images from pasteboard, drag and drop, continuity camera
 - Export canvas via copy or system sharing service
 
+## Basic Tools
+
+- Draw freehand
+- Draw line
+- Erase drawings
+- Insert Image
+
 ## Compatibility
 
 - macOS 11+

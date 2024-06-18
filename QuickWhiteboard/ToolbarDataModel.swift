@@ -49,7 +49,7 @@ enum ToolIdentifier: Equatable, Hashable, Identifiable, CaseIterable {
         case .freehand:
             "Draw freehand (\(shortcutKey))"
         case .line:
-            "Draw Line (\(shortcutKey))"
+            "Draw line (\(shortcutKey))"
         case .eraser:
             "Erase drawings (\(shortcutKey))"
         case .image:
