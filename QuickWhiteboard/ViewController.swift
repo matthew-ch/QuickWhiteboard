@@ -363,13 +363,13 @@ extension ViewController: NSServicesMenuRequestor {
 extension ViewController: NSMenuItemValidation {
     func validateMenuItem(_ menuItem: NSMenuItem) -> Bool {
         if menuItem.action == #selector(paste(_:)) {
-            return isEditing && canReadImage(from: NSPasteboard.general)
+            return !isEditing && canReadImage(from: NSPasteboard.general)
         }
         if menuItem.action == #selector(copy(_:)) {
-            return isEditing && !items.isEmpty
+            return !isEditing && !items.isEmpty
         }
         if menuItem.action == #selector(clear(_:)) {
-            return isEditing && !items.isEmpty
+            return !isEditing && !items.isEmpty
         }
         return true
     }
