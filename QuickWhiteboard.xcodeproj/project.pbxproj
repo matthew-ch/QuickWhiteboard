@@ -11,6 +11,7 @@
 		C90CF8D82C15884600B2D88C /* OptionalExtension.swift in Sources */ = {isa = PBXBuildFile; fileRef = C90CF8D72C15884600B2D88C /* OptionalExtension.swift */; };
 		C90CF8DA2C158C4600B2D88C /* ToolbarDataModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C90CF8D92C158C4600B2D88C /* ToolbarDataModel.swift */; };
 		C90CF8DC2C204DB000B2D88C /* MathUtility.swift in Sources */ = {isa = PBXBuildFile; fileRef = C90CF8DB2C204DB000B2D88C /* MathUtility.swift */; };
+		C917FF3D2C24262A00D7188D /* Accelerate.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C917FF3C2C24262A00D7188D /* Accelerate.framework */; };
 		C9B1C7542BD92A6F0013C568 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9B1C7532BD92A6F0013C568 /* AppDelegate.swift */; };
 		C9B1C7562BD92A6F0013C568 /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9B1C7552BD92A6F0013C568 /* ViewController.swift */; };
 		C9B1C7582BD92A700013C568 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C9B1C7572BD92A700013C568 /* Assets.xcassets */; };
@@ -34,6 +35,7 @@
 		C90CF8D72C15884600B2D88C /* OptionalExtension.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OptionalExtension.swift; sourceTree = "<group>"; };
 		C90CF8D92C158C4600B2D88C /* ToolbarDataModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToolbarDataModel.swift; sourceTree = "<group>"; };
 		C90CF8DB2C204DB000B2D88C /* MathUtility.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MathUtility.swift; sourceTree = "<group>"; };
+		C917FF3C2C24262A00D7188D /* Accelerate.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Accelerate.framework; path = System/Library/Frameworks/Accelerate.framework; sourceTree = SDKROOT; };
 		C9B1C7502BD92A6F0013C568 /* QuickWhiteboard.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = QuickWhiteboard.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		C9B1C7532BD92A6F0013C568 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		C9B1C7552BD92A6F0013C568 /* ViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewController.swift; sourceTree = "<group>"; };
@@ -62,6 +64,7 @@
 				C9CDCE682C0390B600D91688 /* Combine.framework in Frameworks */,
 				C9CDCE622C01DB6400D91688 /* SwiftUI.framework in Frameworks */,
 				C9B1C76C2BDA802A0013C568 /* CoreGraphics.framework in Frameworks */,
+				C917FF3D2C24262A00D7188D /* Accelerate.framework in Frameworks */,
 				C9B1C7662BDA784F0013C568 /* Metal.framework in Frameworks */,
 				C9B1C7682BDA78530013C568 /* MetalKit.framework in Frameworks */,
 			);
@@ -113,6 +116,7 @@
 		C9B1C7642BDA784F0013C568 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				C917FF3C2C24262A00D7188D /* Accelerate.framework */,
 				C9CDCE672C0390B600D91688 /* Combine.framework */,
 				C9CDCE612C01DB6400D91688 /* SwiftUI.framework */,
 				C9B1C76B2BDA802A0013C568 /* CoreGraphics.framework */,

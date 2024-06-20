@@ -10,6 +10,7 @@ import CoreGraphics
 import Metal
 import MetalKit
 import simd
+import Accelerate
 
 protocol RenderItem: AnyObject, ToolEditingItem {
     var boundingRect: CGRect { get }
@@ -72,26 +73,40 @@ final class DrawingItem: RenderItem {
         boundingRect = CGRect(origin: .from(minxy), size: .from(maxxy - minxy))
     }
     
-    private func generateTriangles(point: PointSample, lastPoint: PointSample?) -> [SIMD2<Float>] {
+    private func generateTriangles(point: PointSample, previousPoint: PointSample?, nextPoint: PointSample?) -> [SIMD2<Float>] {
         let location = point.location
-        let lastLocation = lastPoint?.location
-        var result: [SIMD2<Float>] = []
+        let previousLocation = previousPoint?.location
+        let nextLocation = nextPoint?.location
+
         let pointTriangleCount = max(Int(ceilf(Float.pi * strokeWidth / 2.0)), 4)
         let sectorAngle = Float.pi * 2.0 / Float(pointTriangleCount)
+        let angles = (0..<pointTriangleCount).map({ sectorAngle * Float($0) })
+        var cosValues = Array<Float>(repeating: 0.0, count: pointTriangleCount)
+        var sinValues = Array<Float>(repeating: 0.0, count: pointTriangleCount)
+        vForce.sincos(angles, sinResult: &sinValues, cosResult: &cosValues)
+
         var points: [SIMD2<Float>] = []
-        let radius = strokeWidth / 2.0
         for i in 0..<pointTriangleCount {
-            let angle = sectorAngle * Float(i)
-            let x = location.x + cosf(angle) * radius
-            let y = location.y + sinf(angle) * radius
-            points.append(.init(x: x, y: y))
+            points.append(.init(x: cosValues[i], y: sinValues[i]))
         }
+        points.append(points[0])
+        let radius = strokeWidth / 2.0
+        var visibleIndices = Array(0..<pointTriangleCount)
         
-        if let lastLocation {
-            let v = normalize(location - lastLocation)
+        var result: [SIMD2<Float>] = []
+
+        if let nextLocation {
+            let v = normalize(location - nextLocation)
+            visibleIndices = visibleIndices.filter { i in
+                simd_dot(points[i], v) > 0 || simd_dot(points[i + 1], v) > 0
+            }
+        }
+
+        if let previousLocation {
+            let v = normalize(location - previousLocation)
             let u = SIMD2<Float>(-v.y, v.x)
-            let p0 = lastLocation + u * radius
-            let p1 = lastLocation - u * radius
+            let p0 = previousLocation + u * radius
+            let p1 = previousLocation - u * radius
             let p2 = location + u * radius
             let p3 = location - u * radius
             result.append(p0)
@@ -100,31 +115,26 @@ final class DrawingItem: RenderItem {
             result.append(p2)
             result.append(p1)
             result.append(p3)
-            for i in 0..<pointTriangleCount {
-                let pi = points[i]
-                let pj = points[(i + 1) % pointTriangleCount]
-                if simd_dot(pi - location, v) >= 0 || simd_dot(pj - location, v) >= 0 {
-                    result.append(location)
-                    result.append(pi)
-                    result.append(pj)
-                }
+
+            visibleIndices = visibleIndices.filter { i in
+                simd_dot(points[i], v) > 0 || simd_dot(points[i + 1], v) > 0
             }
-        } else {
-            for i in 0..<pointTriangleCount {
-                result.append(location)
-                result.append(points[i])
-                result.append(points[(i + 1) % pointTriangleCount])
-            }
+        }
+
+        for i in visibleIndices {
+            result.append(location)
+            result.append(points[i] * radius + location)
+            result.append(points[i + 1] * radius + location)
         }
         return result
     }
     
     private func generateVertexes() -> [SIMD2<Float>] {
-        var lastPoint: PointSample? = nil
         var result: [SIMD2<Float>] = []
-        for point in points {
-            result.append(contentsOf: generateTriangles(point: point, lastPoint: lastPoint))
-            lastPoint = point
+        for i in 0..<points.count {
+            let previousPoint = i == 0 ? nil : points[i - 1]
+            let nextPoint = i + 1 < points.count ? points[i + 1] : nil
+            result.append(contentsOf: generateTriangles(point: points[i], previousPoint: previousPoint, nextPoint: nextPoint))
         }
         return result
     }
