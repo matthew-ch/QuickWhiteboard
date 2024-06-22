@@ -8,6 +8,8 @@
 import Foundation
 import simd
 
+let halfOfSqrt2 = Float(2.0).squareRoot() / 2.0
+
 func matrix2DRotateAndScale(radian: Float, scale: Float = 1.0) -> simd_float2x2 {
     let cos_value = cos(radian) * scale
     let sin_value = sin(radian) * scale

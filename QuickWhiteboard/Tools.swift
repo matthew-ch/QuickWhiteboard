@@ -71,12 +71,32 @@ class FreehandTool: Tool {
 }
 
 class LineTool: FreehandTool {
+    static let dirXs = SIMD8<Float>(arrayLiteral: 0.0, halfOfSqrt2, 1.0, halfOfSqrt2, 0.0, -halfOfSqrt2, -1.0, -halfOfSqrt2)
+    static let dirYs = SIMD8<Float>(arrayLiteral: 1.0, halfOfSqrt2, 0.0, -halfOfSqrt2, -1.0, -halfOfSqrt2, 0.0, halfOfSqrt2)
     override func mouseDragged(with event: NSEvent, location: CGPoint) {
         if let _editingItem {
             if _editingItem.points.count > 1 {
                 _editingItem.popLastSample()
             }
-            _editingItem.addPointSample(location: location)
+            if _editingItem.points.count == 0 || !NSEvent.modifierFlags.contains(.shift) {
+                _editingItem.addPointSample(location: location)
+            } else {
+                let origin = _editingItem.points[0].location
+                let v = location.float2 - origin
+                let dots = Self.dirXs * v.x + Self.dirYs * v.y
+                var maxIndex = 0
+                var maxValue = dots[0]
+                for index in 1..<8 {
+                    if dots[index] > maxValue {
+                        maxValue = dots[index]
+                        maxIndex = index
+                    }
+                }
+
+                let u = SIMD2<Float>(Self.dirXs[maxIndex], Self.dirYs[maxIndex]) * maxValue
+                let modifiedLocation = CGPoint.from(origin + u)
+                _editingItem.addPointSample(location: modifiedLocation)
+            }
             delegate.setNeedsDisplay()
         }
     }
