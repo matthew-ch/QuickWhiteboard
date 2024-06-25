@@ -20,6 +20,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationWillTerminate(_ aNotification: Notification) {
         // Insert code here to tear down your application
+        NSColorPanel.shared.close()
     }
 
     func applicationSupportsSecureRestorableState(_ app: NSApplication) -> Bool {

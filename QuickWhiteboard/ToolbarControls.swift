@@ -33,6 +33,56 @@ struct ExportButton: NSViewRepresentable {
     typealias NSViewType = NSButton
 }
 
+struct StrokeSlider: View {
+    static let formatter = {
+        let formatter = NumberFormatter()
+        formatter.maximumFractionDigits = 1
+        return formatter
+    }()
+
+    @Binding var strokeWidth: CGFloat
+
+    @State var isHovering = false
+
+    var body: some View {
+        GeometryReader() { geometry in
+            Slider(value: $strokeWidth, in: 1...32) {
+                if geometry.size.width > 70 {
+                    ZStack(alignment: Alignment(horizontal: .trailing, vertical: .center)) {
+                        Text(Self.formatter.string(from: strokeWidth as NSNumber)!)
+                            .opacity(isHovering ? 1.0 : 0.0)
+                        Text("Stroke")
+                            .opacity(isHovering ? 0.0 : 1.0)
+                    }
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                }
+            }
+            .frame(height: 40)
+            .onHover(perform: { hovering in
+                isHovering = hovering
+            })
+        }
+    }
+}
+
+struct ToolbarColorPicker: View {
+    @Binding var color: Color
+
+    var body: some View {
+        GeometryReader() { geometry in
+            ColorPicker(selection: $color, supportsOpacity: false, label: {
+                if geometry.size.width > 80 {
+                    Text("Color")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+            })
+            .frame(height: 40)
+        }
+    }
+}
+
 struct MainToolbar: View {
     
     @ObservedObject var dataModel: ToolbarDataModel
@@ -50,17 +100,10 @@ struct MainToolbar: View {
                 .help(id.tooltip)
             }
             Spacer()
-            Slider(value: $dataModel.strokeWidth, in: 1...32) {
-                Text("Stroke")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-            }
-            .frame(maxWidth: 180)
-            ColorPicker(selection: $dataModel.color, supportsOpacity: false, label: {
-                Text("Color")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-            })
+            StrokeSlider(strokeWidth: $dataModel.strokeWidth)
+                .frame(maxWidth: 180)
+            ToolbarColorPicker(color: $dataModel.color)
+                .frame(maxWidth: 100)
             Spacer()
             #if DEBUG
             Button(action: {
@@ -152,7 +195,7 @@ struct ToolbarControls: View {
         ToolbarControls(dataModel: ToolbarDataModel(strokeWidth: 2.0, color: .red))
             .frame(width: 400, height: 40)
         
-        ToolbarControls(dataModel: ToolbarDataModel(strokeWidth: 2.0, color: .red, imageItemProperty: ImageItemProperty()))
-            .frame(width: 400, height: 40)
+        ToolbarControls(dataModel: ToolbarDataModel(strokeWidth: 2.0, color: .red))
+            .frame(width: 700, height: 40)
     }
 }

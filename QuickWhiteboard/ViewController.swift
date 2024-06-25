@@ -42,7 +42,7 @@ class ViewController: NSViewController {
         activeTool.editingItem != nil
     }
     
-    let toolbarDataModel = ToolbarDataModel(strokeWidth: 2.0, color: .init(red: 0.1, green: 0.2, blue: 0.7))
+    let toolbarDataModel = ToolbarDataModel(strokeWidth: 2.0, color: .init(red: 1.0/255.0, green: 25.0/255.0, blue: 147.0/255.0))
     
     private var debug = false
     private var previousViewSize: CGSize = .zero
