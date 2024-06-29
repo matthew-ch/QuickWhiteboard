@@ -6,6 +6,7 @@
 ## Features
 
 - Infinite canvas
+    - Use trackpad, or scroll wheel to change viewport, or drag viewport with right mouse button
 - Unlimited undo and redo
 - Import images from pasteboard, drag and drop, continuity camera
 - Export canvas via copy or system sharing service
@@ -14,6 +15,7 @@
 
 - Draw freehand
 - Draw line
+    - Press Shift to draw horizontal, vertical and diagonal lines
 - Erase drawings
 - Insert Image
 
