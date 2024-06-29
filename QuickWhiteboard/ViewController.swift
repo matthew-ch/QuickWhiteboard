@@ -25,7 +25,7 @@ class ViewController: NSViewController {
     private lazy var eraserTool = EraserTool(delegate: self)
     private lazy var imageTool = ImageTool(delegate: self)
 
-    var activeTool: any Tool {
+    private var activeTool: any Tool {
         switch toolbarDataModel.activeToolIdentifier {
         case .freehand:
             freehandTool
@@ -41,7 +41,10 @@ class ViewController: NSViewController {
     var isEditing: Bool {
         activeTool.editingItem != nil
     }
-    
+
+    private var isLeftMouseDown = false
+    private var isRightMouseDown = false
+
     let toolbarDataModel = ToolbarDataModel(strokeWidth: 2.0, color: .init(red: 1.0/255.0, green: 25.0/255.0, blue: 147.0/255.0))
     
     private var debug = false
@@ -151,6 +154,14 @@ class ViewController: NSViewController {
         }
     }
 
+    func canvasSetCursor(with event: NSEvent) {
+        if isRightMouseDown {
+            NSCursor.closedHand.set()
+        } else {
+            activeTool.setCursor()
+        }
+    }
+
     func canvasViewScrollWheel(with event: NSEvent) {
         let factor = event.hasPreciseScrollingDeltas ? 1.0 : 5.0
         origin.x -= event.scrollingDeltaX * factor
@@ -165,17 +176,50 @@ class ViewController: NSViewController {
     }
     
     func canvasViewMouseDown(with event: NSEvent) {
+        if isRightMouseDown {
+            return
+        }
+        isLeftMouseDown = true
         activeTool.mouseDown(with: event, location: convertEventLocation(event.locationInWindow))
     }
-    
-    func canvasViewMouseUp(with event: NSEvent) {
-        activeTool.mouseUp(with: event, location: convertEventLocation(event.locationInWindow))
-    }
-    
+
     func canvasViewMouseDragged(with event: NSEvent) {
-        activeTool.mouseDragged(with: event, location: convertEventLocation(event.locationInWindow))
+        if isLeftMouseDown {
+            activeTool.mouseDragged(with: event, location: convertEventLocation(event.locationInWindow))
+        }
     }
-    
+
+    func canvasViewMouseUp(with event: NSEvent) {
+        if isLeftMouseDown {
+            activeTool.mouseUp(with: event, location: convertEventLocation(event.locationInWindow))
+        }
+        isLeftMouseDown = false
+    }
+
+    func canvasRightMouseDown(with event: NSEvent) {
+        if isLeftMouseDown {
+            return
+        }
+        isRightMouseDown = true
+        canvasSetCursor(with: event)
+    }
+
+    func canvasRightMouseDragged(with event: NSEvent) {
+        if isRightMouseDown {
+            origin.x -= event.deltaX
+            origin.y += event.deltaY
+            origin = origin.rounded
+            setNeedsDisplay()
+        }
+    }
+
+    func canvasRightMouseUp(with event: NSEvent) {
+        isRightMouseDown = false
+        if mouseIsInsideCanvas() {
+            canvasSetCursor(with: event)
+        }
+    }
+
     @IBAction func paste(_ sender: Any) {
         readImage(from: NSPasteboard.general)
     }

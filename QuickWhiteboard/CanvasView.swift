@@ -23,7 +23,7 @@ class CanvasView: MTKView {
     }
     
     override func cursorUpdate(with event: NSEvent) {
-        viewController?.activeTool.setCursor()
+        viewController?.canvasSetCursor(with: event)
     }
     
     override func setFrameSize(_ newSize: NSSize) {
@@ -45,6 +45,18 @@ class CanvasView: MTKView {
     
     override func mouseDragged(with event: NSEvent) {
         viewController?.canvasViewMouseDragged(with: event)
+    }
+
+    override func rightMouseDown(with event: NSEvent) {
+        viewController?.canvasRightMouseDown(with: event)
+    }
+
+    override func rightMouseDragged(with event: NSEvent) {
+        viewController?.canvasRightMouseDragged(with: event)
+    }
+
+    override func rightMouseUp(with event: NSEvent) {
+        viewController?.canvasRightMouseUp(with: event)
     }
 
     override func draggingEntered(_ sender: any NSDraggingInfo) -> NSDragOperation {
