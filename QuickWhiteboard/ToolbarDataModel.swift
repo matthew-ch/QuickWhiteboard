@@ -47,13 +47,13 @@ enum ToolIdentifier: Equatable, Hashable, Identifiable, CaseIterable {
     var tooltip: String {
         switch self {
         case .freehand:
-            "Draw freehand (\(shortcutKey))"
+            "\(localizedString("Draw freehand")) (\(shortcutKey))"
         case .line:
-            "Draw line (\(shortcutKey))"
+            "\(localizedString("Draw line")) (\(shortcutKey))"
         case .eraser:
-            "Erase drawings (\(shortcutKey))"
+            "\(localizedString("Erase drawings")) (\(shortcutKey))"
         case .image:
-            "Insert image (\(shortcutKey))"
+            "\(localizedString("Insert image")) (\(shortcutKey))"
         }
     }
 }

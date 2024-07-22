@@ -156,8 +156,8 @@ final class DrawingItem: RenderItem {
     
     func upload(to device: MTLDevice) -> (vetexBuffer: any MTLBuffer, vertexCount: Int) {
         if vertexBuffer == nil {
-            var vertexes = generateVertexes()
-            vertexBuffer = device.makeBuffer(bytes: &vertexes, length: MemoryLayout<SIMD2<Float>>.size * max(vertexes.count, 1))!
+            let vertexes = generateVertexes()
+            vertexBuffer = device.makeBuffer(bytes: vertexes, length: MemoryLayout<SIMD2<Float>>.size * max(vertexes.count, 1))!
         }
         return (vertexBuffer!, vertexBuffer!.length / MemoryLayout<SIMD2<Float>>.size)
     }

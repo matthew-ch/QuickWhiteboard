@@ -1,0 +1,26 @@
+/* 
+  Localizable.strings
+  QuickWhiteboard
+
+  Created by Matthew.J on 2024/7/22.
+  
+*/
+"Stroke" = "笔触";
+
+"Color" = "颜色";
+
+"Export" = "导出";
+
+"Scale" = "比例";
+
+"Rotation" = "旋转";
+
+"Done" = "完成";
+
+"Draw freehand" = "徒手画";
+
+"Draw line" = "画直线";
+
+"Erase drawings" = "擦除绘画";
+
+"Insert image" = "插入图片";
