@@ -7,6 +7,7 @@
 
 import SwiftUI
 
+@MainActor
 protocol ToolbarDelegate: AnyObject {
     func toggleDebug() -> Void
     func exportCanvas(_ sender: NSButton) -> Void

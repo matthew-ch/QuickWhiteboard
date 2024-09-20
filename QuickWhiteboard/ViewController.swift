@@ -394,7 +394,7 @@ extension ViewController: ToolbarDelegate {
 }
 
 // MARK: NSServicesMenuRequestor
-extension ViewController: NSServicesMenuRequestor {
+extension ViewController: @preconcurrency NSServicesMenuRequestor {
     func readSelection(from pboard: NSPasteboard) -> Bool {
         guard canReadImage(from: pboard) else {
             return false

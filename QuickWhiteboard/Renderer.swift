@@ -11,6 +11,7 @@ import MetalKit
 
 private let sampleCount = 4
 
+@MainActor
 final class Renderer {
     private var device: any MTLDevice
     private var pixelFormat: MTLPixelFormat

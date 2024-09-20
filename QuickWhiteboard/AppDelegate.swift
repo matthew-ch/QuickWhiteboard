@@ -38,7 +38,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         windowController.showWindow(nil)
     }
     
-    @objc func windowDidClose(_ sender: Notification) {
+    @MainActor @objc func windowDidClose(_ sender: Notification) {
         let window = sender.object as! NSWindow
         if let windowController = window.windowController as? WindowController, let index = windowControllers.firstIndex(of: windowController) {
             windowControllers.remove(at: index)

@@ -12,6 +12,7 @@ import MetalKit
 import simd
 import Accelerate
 
+@MainActor
 protocol RenderItem: AnyObject, ToolEditingItem {
     var boundingRect: CGRect { get }
     var hidden: Bool { get set }

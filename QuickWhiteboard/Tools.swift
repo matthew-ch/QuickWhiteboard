@@ -9,8 +9,10 @@ import Foundation
 import AppKit
 import Combine
 
+@MainActor
 protocol ToolEditingItem: AnyObject {}
 
+@MainActor
 protocol ToolDelegate: AnyObject {
     func setNeedsDisplay() -> Void
     func commit(item: any ToolEditingItem) -> Void
@@ -19,6 +21,7 @@ protocol ToolDelegate: AnyObject {
     var renderItems: [any RenderItem] { get }
 }
 
+@MainActor
 protocol Tool: AnyObject {
     init(delegate: any ToolDelegate)
     var delegate: any ToolDelegate { get }
