@@ -7,6 +7,8 @@
 
 import Foundation
 
+let round_scale = 2.0
+
 extension CGPoint {
     static func from(_ float2: SIMD2<Float>) -> Self {
         .init(x: CGFloat(float2.x), y: CGFloat(float2.y))
@@ -17,7 +19,7 @@ extension CGPoint {
     }
     
     var rounded: Self {
-        .init(x: CGFloat(floor(x * 2.0) / 2.0), y: CGFloat(floor(y * 2.0) / 2.0))
+        .init(x: CGFloat(floor(x * round_scale) / round_scale), y: CGFloat(floor(y * round_scale) / round_scale))
     }
 }
 
@@ -31,6 +33,6 @@ extension CGSize {
     }
     
     var rounded: Self {
-        .init(width: CGFloat(floor(width * 2.0) / 2.0), height: CGFloat(floor(height * 2.0) / 2.0))
+        .init(width: CGFloat(floor(width * round_scale) / round_scale), height: CGFloat(floor(height * round_scale) / round_scale))
     }
 }

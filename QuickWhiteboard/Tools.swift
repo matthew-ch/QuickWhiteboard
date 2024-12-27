@@ -62,7 +62,7 @@ class FreehandTool: Tool {
     }
     
     func mouseDragged(with event: NSEvent, location: CGPoint) {
-        if let _editingItem {
+        if let _editingItem, location.float2 != _editingItem.points.last?.location {
             _editingItem.addPointSample(location: location)
             delegate.setNeedsDisplay()
         }
@@ -78,11 +78,16 @@ class LineTool: FreehandTool {
     static let dirYs = SIMD8<Float>(arrayLiteral: 1.0, halfOfSqrt2, 0.0, -halfOfSqrt2, -1.0, -halfOfSqrt2, 0.0, halfOfSqrt2)
     override func mouseDragged(with event: NSEvent, location: CGPoint) {
         if let _editingItem {
-            if _editingItem.points.count > 1 {
+            guard _editingItem.points.count > 0 else {
+                super.mouseDragged(with: event, location: location)
+                return
+            }
+            let targetLocation: CGPoint
+            while _editingItem.points.count > 1 {
                 _editingItem.popLastSample()
             }
-            if _editingItem.points.count == 0 || !NSEvent.modifierFlags.contains(.shift) {
-                _editingItem.addPointSample(location: location)
+            if !NSEvent.modifierFlags.contains(.shift) {
+                targetLocation = location
             } else {
                 let origin = _editingItem.points[0].location
                 let v = location.float2 - origin
@@ -97,8 +102,46 @@ class LineTool: FreehandTool {
                 }
 
                 let u = SIMD2<Float>(Self.dirXs[maxIndex], Self.dirYs[maxIndex]) * maxValue
-                let modifiedLocation = CGPoint.from(origin + u)
-                _editingItem.addPointSample(location: modifiedLocation)
+                targetLocation = CGPoint.from(origin + u)
+            }
+            if targetLocation.float2 != _editingItem.points[0].location {
+                _editingItem.addPointSample(location: targetLocation)
+                delegate.setNeedsDisplay()
+            }
+        }
+    }
+}
+
+class RectangleTool: FreehandTool {
+    override func mouseDragged(with event: NSEvent, location: CGPoint) {
+        if let _editingItem {
+            guard _editingItem.points.count > 0 else {
+                super.mouseDragged(with: event, location: location)
+                return
+            }
+            while _editingItem.points.count > 1 {
+                _editingItem.popLastSample()
+            }
+            let origin = CGPoint.from(_editingItem.points[0].location)
+            let targetLocation: CGPoint
+            if NSEvent.modifierFlags.contains(.shift) {
+                let diffX = location.x - origin.x
+                let diffY = location.y - origin.y
+                let length = min(abs(diffX), abs(diffY));
+                targetLocation = .init(x: origin.x + (diffX >= 0 ? length : -length), y: origin.y + (diffY >= 0 ? length : -length))
+            } else {
+                targetLocation = location
+            }
+            if origin == targetLocation {
+                return
+            }
+            if origin.x != targetLocation.x && origin.y != targetLocation.y {
+                _editingItem.addPointSample(location: .init(x: origin.x, y: targetLocation.y))
+                _editingItem.addPointSample(location: targetLocation)
+                _editingItem.addPointSample(location: .init(x: targetLocation.x, y: origin.y))
+                _editingItem.addPointSample(location: origin)
+            } else {
+                _editingItem.addPointSample(location: targetLocation)
             }
             delegate.setNeedsDisplay()
         }

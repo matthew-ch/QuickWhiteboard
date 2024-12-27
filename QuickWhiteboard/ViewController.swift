@@ -22,6 +22,7 @@ class ViewController: NSViewController {
     
     private lazy var freehandTool = FreehandTool(delegate: self)
     private lazy var lineTool = LineTool(delegate: self)
+    private lazy var rectangleTool = RectangleTool(delegate: self)
     private lazy var eraserTool = EraserTool(delegate: self)
     private lazy var imageTool = ImageTool(delegate: self)
 
@@ -31,6 +32,8 @@ class ViewController: NSViewController {
             freehandTool
         case .line:
             lineTool
+        case .rectangle:
+            rectangleTool
         case .eraser:
             eraserTool
         case .image:
@@ -135,7 +138,11 @@ class ViewController: NSViewController {
     }
     
     // MARK: event handling
-    
+
+    func onScreenChange() {
+        canvasView.needsDisplay = true
+    }
+
     override func keyDown(with event: NSEvent) {
         guard !isEditing, event.modifierFlags.intersection([.shift, .control, .control]).isEmpty, !event.isARepeat else {
             return

@@ -24,7 +24,7 @@ final class WindowController: NSWindowController {
     }
 
     override func validRequestor(forSendType sendType: NSPasteboard.PasteboardType?, returnType: NSPasteboard.PasteboardType?) -> Any? {
-        if let pasteboardType = returnType, NSImage.imageTypes.contains(pasteboardType.rawValue) {
+        if sendType == nil, let pasteboardType = returnType, NSImage.imageTypes.contains(pasteboardType.rawValue) {
             return contentViewController
         }
         return super.validRequestor(forSendType: sendType, returnType: returnType)
@@ -33,6 +33,6 @@ final class WindowController: NSWindowController {
 
 extension WindowController: NSWindowDelegate {
     func windowDidChangeScreen(_ notification: Notification) {
-        window?.contentViewController?.view.needsDisplay = true
+        (window?.contentViewController as? ViewController)?.onScreenChange()
     }
 }

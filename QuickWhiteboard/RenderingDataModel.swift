@@ -141,14 +141,7 @@ final class DrawingItem: RenderItem {
     }
     
     func addPointSample(location: CGPoint) {
-        let sampleLocation = SIMD2(Float(location.x), Float(location.y))
-        let lastLocation = points.last?.location
-        if let lastLocation {
-            if simd_length(sampleLocation - lastLocation) < 1e-1 {
-                return
-            }
-        }
-        points.append(PointSample(location: sampleLocation))
+        points.append(PointSample(location: location.float2))
     }
     
     func popLastSample() {
