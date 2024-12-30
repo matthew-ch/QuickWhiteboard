@@ -12,6 +12,7 @@
 		C90CF8DA2C158C4600B2D88C /* ToolbarDataModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C90CF8D92C158C4600B2D88C /* ToolbarDataModel.swift */; };
 		C90CF8DC2C204DB000B2D88C /* MathUtility.swift in Sources */ = {isa = PBXBuildFile; fileRef = C90CF8DB2C204DB000B2D88C /* MathUtility.swift */; };
 		C917FF3D2C24262A00D7188D /* Accelerate.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C917FF3C2C24262A00D7188D /* Accelerate.framework */; };
+		C957F54D2D22BA3700F992DB /* Presets.swift in Sources */ = {isa = PBXBuildFile; fileRef = C957F54C2D22BA3700F992DB /* Presets.swift */; };
 		C97FE2992C4E75AC00DF6535 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = C9B1C7592BD92A700013C568 /* Main.storyboard */; };
 		C97FE29C2C4E781700DF6535 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = C97FE29A2C4E781700DF6535 /* Localizable.strings */; };
 		C97FE29F2C4E7C8900DF6535 /* StringUtility.swift in Sources */ = {isa = PBXBuildFile; fileRef = C97FE29E2C4E7C8900DF6535 /* StringUtility.swift */; };
@@ -38,6 +39,7 @@
 		C90CF8D92C158C4600B2D88C /* ToolbarDataModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToolbarDataModel.swift; sourceTree = "<group>"; };
 		C90CF8DB2C204DB000B2D88C /* MathUtility.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MathUtility.swift; sourceTree = "<group>"; };
 		C917FF3C2C24262A00D7188D /* Accelerate.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Accelerate.framework; path = System/Library/Frameworks/Accelerate.framework; sourceTree = SDKROOT; };
+		C957F54C2D22BA3700F992DB /* Presets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Presets.swift; sourceTree = "<group>"; };
 		C97FE2962C4E728200DF6535 /* zh-Hans */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hans"; path = "zh-Hans.lproj/Main.strings"; sourceTree = "<group>"; };
 		C97FE29D2C4E781C00DF6535 /* zh-Hans */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hans"; path = "zh-Hans.lproj/Localizable.strings"; sourceTree = "<group>"; };
 		C97FE29E2C4E7C8900DF6535 /* StringUtility.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StringUtility.swift; sourceTree = "<group>"; };
@@ -116,6 +118,7 @@
 				C90CF8DB2C204DB000B2D88C /* MathUtility.swift */,
 				C97FE29A2C4E781700DF6535 /* Localizable.strings */,
 				C97FE29E2C4E7C8900DF6535 /* StringUtility.swift */,
+				C957F54C2D22BA3700F992DB /* Presets.swift */,
 			);
 			path = QuickWhiteboard;
 			sourceTree = "<group>";
@@ -218,6 +221,7 @@
 				C9B1C76A2BDA79160013C568 /* RenderingDataModel.swift in Sources */,
 				C90CF8D62C154FDB00B2D88C /* Tools.swift in Sources */,
 				C90CF8DA2C158C4600B2D88C /* ToolbarDataModel.swift in Sources */,
+				C957F54D2D22BA3700F992DB /* Presets.swift in Sources */,
 				C97FE29F2C4E7C8900DF6535 /* StringUtility.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

@@ -12,11 +12,12 @@ protocol ToolbarDelegate: AnyObject {
     func toggleDebug() -> Void
     func exportCanvas(_ sender: NSButton) -> Void
     func commitImageItemProperty() -> Void
+    func addStrokePreset() -> Void
+    func removeStrokePreset(preset: StrokePreset) -> Void
     func onClickTool(identifier: ToolIdentifier) -> Void
 }
 
 struct ExportButton: NSViewRepresentable {
-    weak var toolbarDelegate: (any ToolbarDelegate)?
 
     func makeNSView(context: Context) -> NSButton {
         let button = NSButton(
@@ -34,90 +35,125 @@ struct ExportButton: NSViewRepresentable {
     typealias NSViewType = NSButton
 }
 
-struct StrokeSlider: View {
-    static let formatter = {
-        let formatter = NumberFormatter()
-        formatter.maximumFractionDigits = 1
-        return formatter
-    }()
+struct StrokePresetsMenu: View {
 
-    @Binding var strokeWidth: CGFloat
-
-    @State var isHovering = false
+    @ObservedObject var dataModel: ToolbarDataModel
+    weak var delegate: (any ToolbarDelegate)?
+    @State private var isShowingPopover = false
 
     var body: some View {
-        GeometryReader() { geometry in
-            Slider(value: $strokeWidth, in: 1...32) {
-                if geometry.size.width > 70 {
-                    ZStack(alignment: Alignment(horizontal: .trailing, vertical: .center)) {
-                        Text(Self.formatter.string(from: strokeWidth as NSNumber)!)
-                            .opacity(isHovering ? 1.0 : 0.0)
-                        Text("Stroke")
-                            .opacity(isHovering ? 0.0 : 1.0)
+        Button {
+            self.isShowingPopover = true
+        } label: {
+            Image(systemName: "pencil.tip.crop.circle")
+                .help("Presets")
+        }
+        .popover(isPresented: $isShowingPopover, arrowEdge: .bottom) {
+            VStack(spacing: 4.0) {
+                Button {
+                    delegate?.addStrokePreset()
+                } label: {
+                    HStack(alignment: .center, spacing: 2.0) {
+                        Text("\(Int(dataModel.strokeWidth))")
+                            .frame(width: 24.0)
+                        Rectangle()
+                            .fill(dataModel.strokeColor)
+                            .frame(width: 32.0, height: 16.0)
+                        Image(systemName: "plus.circle")
+                            .font(.caption2)
                     }
-                    .font(.caption)
-                    .foregroundColor(.secondary)
+                }
+                .buttonStyle(.plain)
+
+                if dataModel.strokePresets.count > 0 {
+                    Divider()
+                }
+
+                ForEach(dataModel.strokePresets) { stroke in
+                    Button {
+                        dataModel.strokeWidth = stroke.width
+                        dataModel.strokeColor = Color(stroke.color)
+                    } label: {
+                        HStack(alignment: .center, spacing: 2.0) {
+                            Text("\(Int(stroke.width))")
+                                .frame(width: 24.0)
+                            Rectangle()
+                                .fill(Color(stroke.color))
+                                .brightness(0)
+                                .frame(width: 32.0, height: 16.0)
+                            Button {
+                                delegate?.removeStrokePreset(preset: stroke)
+                            } label: {
+                                Image(systemName: "minus.circle")
+                                    .font(.caption2)
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                    .buttonStyle(.plain)
                 }
             }
-            .frame(height: 40)
-            .onHover(perform: { hovering in
-                isHovering = hovering
-            })
-        }
-    }
-}
-
-struct ToolbarColorPicker: View {
-    @Binding var color: Color
-
-    var body: some View {
-        GeometryReader() { geometry in
-            ColorPicker(selection: $color, supportsOpacity: false, label: {
-                if geometry.size.width > 80 {
-                    Text("Color")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                }
-            })
-            .frame(height: 40)
+            .padding(.all, 6.0)
         }
     }
 }
 
 struct MainToolbar: View {
-    
+    static let formatter = {
+        let formatter = NumberFormatter()
+        formatter.maximumIntegerDigits = 2
+        formatter.numberStyle = .none
+        formatter.minimum = 1
+        formatter.maximum = 99
+        return formatter
+    }()
+
     @ObservedObject var dataModel: ToolbarDataModel
     weak var delegate: (any ToolbarDelegate)?
 
     var body: some View {
-        HStack {
-            ForEach(ToolIdentifier.allCases) { id in
+        GeometryReader { proxy in
+            HStack {
+                ForEach(ToolIdentifier.allCases) { id in
+                    Button(action: {
+                        delegate?.onClickTool(identifier: id)
+                    }, label: {
+                        Image(systemName: id.symbolName)
+                            .foregroundColor(id == dataModel.activeToolIdentifier ? Color.accentColor : Color.primary)
+                    })
+                    .help(id.tooltip)
+                }
+                Spacer()
+                if proxy.size.width >= 500 {
+                    Text("Stroke")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+
+                TextField("Width", value: $dataModel.strokeWidth, formatter: Self.formatter)
+                    .frame(width: 32)
+                    .help("Width")
+
+                ColorPicker(selection: $dataModel.strokeColor, supportsOpacity: false, label: {})
+                    .help("Color")
+
+                StrokePresetsMenu(dataModel: dataModel, delegate: delegate)
+
+                Spacer()
+#if DEBUG
                 Button(action: {
-                    delegate?.onClickTool(identifier: id)
+                    delegate?.toggleDebug()
                 }, label: {
-                    Image(systemName: id.symbolName)
-                        .foregroundColor(id == dataModel.activeToolIdentifier ? Color.accentColor : Color.primary)
+                    Image(systemName: "ladybug")
                 })
-                .help(id.tooltip)
+                .help("Toggle debug")
+#endif
+                ExportButton()
+                    .help("Export")
             }
-            Spacer()
-            StrokeSlider(strokeWidth: $dataModel.strokeWidth)
-                .frame(maxWidth: 180)
-            ToolbarColorPicker(color: $dataModel.color)
-                .frame(maxWidth: 100)
-            Spacer()
-            #if DEBUG
-            Button(action: {
-                delegate?.toggleDebug()
-            }, label: {
-                Image(systemName: "ladybug")
-            })
-            .help("Toggle debug")
-            #endif
-            ExportButton(toolbarDelegate: delegate)
-                .help("Export")
+            .frame(height: proxy.size.height)
+            .padding(.horizontal)
         }
-        .padding(.horizontal)
     }
 }
 
@@ -192,11 +228,15 @@ struct ToolbarControls: View {
 }
 
 #Preview {
+    let strokePresets = [
+        StrokePreset(width: 2.0, color: NSColor.red),
+        StrokePreset(width: 4.0, color: NSColor.green)
+    ]
     Group {
-        ToolbarControls(dataModel: ToolbarDataModel(strokeWidth: 2.0, color: .red))
-            .frame(width: 400, height: 40)
-        
-        ToolbarControls(dataModel: ToolbarDataModel(strokeWidth: 2.0, color: .red))
+        ToolbarControls(dataModel: ToolbarDataModel(strokeWidth: 2.0, strokeColor: .red, strokePresets: strokePresets))
+            .frame(width: 499, height: 40)
+
+        ToolbarControls(dataModel: ToolbarDataModel(strokeWidth: 2.0, strokeColor: .red, strokePresets: strokePresets))
             .frame(width: 700, height: 40)
     }
 }

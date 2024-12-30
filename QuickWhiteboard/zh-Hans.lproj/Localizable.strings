@@ -7,6 +7,8 @@
 */
 "Stroke" = "笔触";
 
+"Width" = "宽度";
+
 "Color" = "颜色";
 
 "Export" = "导出";
@@ -26,3 +28,5 @@
 "Erase drawings" = "擦除绘画";
 
 "Insert image" = "插入图片";
+
+"Presets" = "预设";

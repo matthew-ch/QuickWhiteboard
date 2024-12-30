@@ -51,7 +51,7 @@ class FreehandTool: Tool {
     }
     
     func mouseDown(with event: NSEvent, location: CGPoint) {
-        let item = DrawingItem(color:  NSColor(delegate.toolbarDataModel.color).usingColorSpace(.sRGB)!.cgColor, strokeWidth: delegate.toolbarDataModel.strokeWidth)
+        let item = DrawingItem(color:  NSColor(delegate.toolbarDataModel.strokeColor).usingColorSpace(.sRGB)!.cgColor, strokeWidth: delegate.toolbarDataModel.strokeWidth)
         item.addPointSample(location: location)
         _editingItem = item
         delegate.setNeedsDisplay()

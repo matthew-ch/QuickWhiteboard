@@ -48,8 +48,10 @@ class ViewController: NSViewController {
     private var isLeftMouseDown = false
     private var isRightMouseDown = false
 
-    let toolbarDataModel = ToolbarDataModel(strokeWidth: 2.0, color: .init(red: 1.0/255.0, green: 25.0/255.0, blue: 147.0/255.0))
-    
+    let toolbarDataModel = ToolbarDataModel(strokeWidth: 2.0, strokeColor: .init(red: 1.0/255.0, green: 25.0/255.0, blue: 147.0/255.0))
+
+    private var presetsChanging: AnyCancellable?
+
     private var debug = false
     private var previousViewSize: CGSize = .zero
     
@@ -87,6 +89,10 @@ class ViewController: NSViewController {
         toolbarView.frame = toolbarContainerView.bounds
         toolbarView.translatesAutoresizingMaskIntoConstraints = true
         toolbarContainerView.addSubview(toolbarView)
+
+        presetsChanging = presets.$strokePresets.sink { [weak self] strokePresets in
+            self?.toolbarDataModel.strokePresets = strokePresets
+        }
     }
     
     override func viewDidAppear() {
@@ -377,7 +383,15 @@ extension ViewController: ToolbarDelegate {
     func commitImageItemProperty() {
         imageTool.commit()
     }
-    
+
+    func addStrokePreset() {
+        presets.addStrokePreset(StrokePreset(width: toolbarDataModel.strokeWidth, color: NSColor(toolbarDataModel.strokeColor)))
+    }
+
+    func removeStrokePreset(preset: StrokePreset) {
+        presets.removeStrokePreset(preset)
+    }
+
     func onClickTool(identifier: ToolIdentifier) {
         if identifier == .image {
             let openPanel = NSOpenPanel()

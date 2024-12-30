@@ -72,18 +72,21 @@ class ImageItemProperty: ObservableObject {
 
 class ToolbarDataModel: ObservableObject {
     @Published var strokeWidth: CGFloat
-    @Published var color: Color
+    @Published var strokeColor: Color
+    @Published var strokePresets: [StrokePreset]
     @Published var activeToolIdentifier: ToolIdentifier
     @Published var imageItemProperty: ImageItemProperty
 
     init(
         strokeWidth: CGFloat,
-        color: Color,
+        strokeColor: Color,
+        strokePresets: [StrokePreset] = [],
         activeToolIdentifier: ToolIdentifier = .freehand,
         imageItemProperty: ImageItemProperty = ImageItemProperty()
     ) {
         self.strokeWidth = strokeWidth
-        self.color = color
+        self.strokeColor = strokeColor
+        self.strokePresets = strokePresets
         self.activeToolIdentifier = activeToolIdentifier
         self.imageItemProperty = imageItemProperty
     }
