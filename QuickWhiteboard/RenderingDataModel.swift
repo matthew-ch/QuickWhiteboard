@@ -38,43 +38,27 @@ final class ErasedItems: ToolEditingItem {
     }
 }
 
-final class DrawingItem: RenderItem {
-    private(set) var points: [PointSample] = [] {
-        didSet {
-            vertexBuffer = nil
-            updateBoundingRect()
-        }
+class DrawingItem: RenderItem {
+    var points: [PointSample] {
+        []
     }
-    
-    let color: SIMD4<Float>
-    let strokeWidth: Float
-    
-    private(set) var boundingRect: CGRect = CGRect(origin: .init(x: CGFloat.infinity, y: CGFloat.infinity), size: .zero)
+    var boundingRect: CGRect {
+        CGRect(origin: .init(x: CGFloat.infinity, y: CGFloat.infinity), size: .zero)
+    }
+
     var hidden: Bool = false
 
-    private var vertexBuffer: (any MTLBuffer)?
-    
+    let color: SIMD4<Float>
+    let strokeWidth: Float
+
+    fileprivate var vertexBuffer: (any MTLBuffer)?
+
     init(color: CGColor, strokeWidth: CGFloat) {
-        assert(color.colorSpace?.model == .rgb && color.numberOfComponents >= 3)
-        let components = color.components!
-        self.color = .init(Float(components[0]), Float(components[1]), Float(components[2]), Float(color.numberOfComponents == 3 ? 1.0 : components[3]))
+        self.color = color.float4
         self.strokeWidth = Float(strokeWidth)
     }
-    
-    private func updateBoundingRect() {
-        if points.isEmpty {
-            return
-        }
-        var minxy = SIMD2<Float>(x: Float.infinity, y: Float.infinity)
-        var maxxy = SIMD2<Float>(x: -Float.infinity, y: -Float.infinity)
-        for point in points {
-            minxy = simd_min(minxy, point.location - strokeWidth)
-            maxxy = simd_max(maxxy, point.location + strokeWidth)
-        }
-        boundingRect = CGRect(origin: .from(minxy), size: .from(maxxy - minxy))
-    }
-    
-    private func generateTriangles(point: PointSample, previousPoint: PointSample?, nextPoint: PointSample?) -> [SIMD2<Float>] {
+
+    func generateTriangles(point: PointSample, previousPoint: PointSample?, nextPoint: PointSample?) -> [SIMD2<Float>] {
         let location = point.location
         let previousLocation = previousPoint?.location
         let nextLocation = nextPoint?.location
@@ -93,7 +77,7 @@ final class DrawingItem: RenderItem {
         points.append(points[0])
         let radius = strokeWidth / 2.0
         var visibleIndices = Array(0..<pointTriangleCount)
-        
+
         var result: [SIMD2<Float>] = []
 
         if let nextLocation {
@@ -129,8 +113,8 @@ final class DrawingItem: RenderItem {
         }
         return result
     }
-    
-    private func generateVertexes() -> [SIMD2<Float>] {
+
+    func generateVertexes(points: [PointSample]) -> [SIMD2<Float>] {
         var result: [SIMD2<Float>] = []
         for i in 0..<points.count {
             let previousPoint = i == 0 ? nil : points[i - 1]
@@ -139,21 +123,116 @@ final class DrawingItem: RenderItem {
         }
         return result
     }
-    
-    func addPointSample(location: CGPoint) {
-        points.append(PointSample(location: location.float2))
-    }
-    
-    func popLastSample() {
-        _ = points.popLast()
-    }
-    
+
     func upload(to device: MTLDevice) -> (vetexBuffer: any MTLBuffer, vertexCount: Int) {
         if vertexBuffer == nil {
-            let vertexes = generateVertexes()
+            let vertexes = generateVertexes(points: points)
             vertexBuffer = device.makeBuffer(bytes: vertexes, length: MemoryLayout<SIMD2<Float>>.size * max(vertexes.count, 1))!
         }
         return (vertexBuffer!, vertexBuffer!.length / MemoryLayout<SIMD2<Float>>.size)
+    }
+}
+
+final class FreehandItem: DrawingItem {
+    private var _points: [PointSample] = [] {
+        didSet {
+            vertexBuffer = nil
+            _boundingRect = nil
+        }
+    }
+
+    override var points: [PointSample] {
+        _points
+    }
+
+    private var _boundingRect: CGRect? = CGRect(origin: .init(x: CGFloat.infinity, y: CGFloat.infinity), size: .zero)
+    override var boundingRect: CGRect {
+        if _boundingRect == nil {
+            updateBoundingRect()
+        }
+        return _boundingRect!
+    }
+
+    private func updateBoundingRect() {
+        if points.isEmpty {
+            return
+        }
+        var minxy = SIMD2<Float>(x: Float.infinity, y: Float.infinity)
+        var maxxy = SIMD2<Float>(x: -Float.infinity, y: -Float.infinity)
+        for point in points {
+            minxy = simd_min(minxy, point.location - strokeWidth)
+            maxxy = simd_max(maxxy, point.location + strokeWidth)
+        }
+        _boundingRect = CGRect(origin: .from(minxy), size: .from(maxxy - minxy))
+    }
+
+    func addPointSample(location: CGPoint) {
+        _points.append(PointSample(location: location.float2))
+    }
+}
+
+final class LineItem: DrawingItem {
+
+    override var points: [PointSample] {
+        if from == to {
+            return [PointSample(location: from)]
+        } else {
+            return [PointSample(location: from), PointSample(location: to)]
+        }
+    }
+
+    override var boundingRect: CGRect {
+        let center = (from + to) / 2.0
+        let dimens = simd_abs(from - to) + strokeWidth
+        return CGRect(origin: .from(center - dimens / 2.0), size: .from(dimens))
+    }
+
+    var from: SIMD2<Float> = .zero {
+        didSet {
+            vertexBuffer = nil
+        }
+    }
+
+    var to: SIMD2<Float> = .zero {
+        didSet {
+            vertexBuffer = nil
+        }
+    }
+}
+
+final class RectangleItem: DrawingItem {
+
+    override var points: [PointSample] {
+        if from == to {
+            return [PointSample(location: from)]
+        } else if from.x != to.x && from.y != to.y {
+            return [
+                PointSample(location: from),
+                PointSample(location: .init(x: from.x, y: to.y)),
+                PointSample(location: to),
+                PointSample(location: .init(x: to.x, y: from.y)),
+                PointSample(location: from),
+            ]
+        } else {
+            return [PointSample(location: from), PointSample(location: to)]
+        }
+    }
+
+    override var boundingRect: CGRect {
+        let center = (from + to) / 2.0
+        let dimens = simd_abs(from - to) + strokeWidth
+        return CGRect(origin: .from(center - dimens / 2.0), size: .from(dimens))
+    }
+
+    var from: SIMD2<Float> = .zero {
+        didSet {
+            vertexBuffer = nil
+        }
+    }
+    var to: SIMD2<Float> = .zero {
+        didSet {
+            vertexBuffer = nil
+        }
     }
 }
 

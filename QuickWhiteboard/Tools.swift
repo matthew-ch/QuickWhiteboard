@@ -34,7 +34,7 @@ protocol Tool: AnyObject {
 }
 
 class FreehandTool: Tool {
-    fileprivate var _editingItem: DrawingItem? = nil
+    private var _editingItem: FreehandItem? = nil
     var editingItem: (any ToolEditingItem)? {
         _editingItem
     }
@@ -51,7 +51,7 @@ class FreehandTool: Tool {
     }
     
     func mouseDown(with event: NSEvent, location: CGPoint) {
-        let item = DrawingItem(color:  NSColor(delegate.toolbarDataModel.strokeColor).usingColorSpace(.sRGB)!.cgColor, strokeWidth: delegate.toolbarDataModel.strokeWidth)
+        let item = FreehandItem(color: .from(delegate.toolbarDataModel.strokeColor), strokeWidth: delegate.toolbarDataModel.strokeWidth)
         item.addPointSample(location: location)
         _editingItem = item
         delegate.setNeedsDisplay()
@@ -73,24 +73,47 @@ class FreehandTool: Tool {
     }
 }
 
-class LineTool: FreehandTool {
+class LineTool: Tool {
     static let dirXs = SIMD8<Float>(arrayLiteral: 0.0, halfOfSqrt2, 1.0, halfOfSqrt2, 0.0, -halfOfSqrt2, -1.0, -halfOfSqrt2)
     static let dirYs = SIMD8<Float>(arrayLiteral: 1.0, halfOfSqrt2, 0.0, -halfOfSqrt2, -1.0, -halfOfSqrt2, 0.0, halfOfSqrt2)
-    override func mouseDragged(with event: NSEvent, location: CGPoint) {
+
+    private var _editingItem: LineItem? = nil
+    var editingItem: (any ToolEditingItem)? {
+        _editingItem
+    }
+    unowned let delegate: any ToolDelegate
+
+    required init(delegate: any ToolDelegate) {
+        self.delegate = delegate
+    }
+
+    func commit() {
+        if let item = _editingItem.take() {
+            delegate.commit(item: item)
+        }
+    }
+
+    func mouseDown(with event: NSEvent, location: CGPoint) {
+        let item = LineItem(color: .from(delegate.toolbarDataModel.strokeColor), strokeWidth: delegate.toolbarDataModel.strokeWidth)
+        item.from = location.float2
+        item.to = item.from
+        _editingItem = item
+        delegate.setNeedsDisplay()
+    }
+
+    func mouseUp(with event: NSEvent, location: CGPoint) {
+        commit()
+    }
+
+    func mouseDragged(with event: NSEvent, location: CGPoint) {
         if let _editingItem {
-            guard _editingItem.points.count > 0 else {
-                super.mouseDragged(with: event, location: location)
-                return
-            }
-            let targetLocation: CGPoint
-            while _editingItem.points.count > 1 {
-                _editingItem.popLastSample()
-            }
+            let to: SIMD2<Float>
+
             if !NSEvent.modifierFlags.contains(.shift) {
-                targetLocation = location
+                to = location.float2
             } else {
-                let origin = _editingItem.points[0].location
-                let v = location.float2 - origin
+                let from = _editingItem.from
+                let v = location.float2 - from
                 let dots = Self.dirXs * v.x + Self.dirYs * v.y
                 var maxIndex = 0
                 var maxValue = dots[0]
@@ -100,51 +123,68 @@ class LineTool: FreehandTool {
                         maxIndex = index
                     }
                 }
-
                 let u = SIMD2<Float>(Self.dirXs[maxIndex], Self.dirYs[maxIndex]) * maxValue
-                targetLocation = CGPoint.from(origin + u)
+                to = from + u
             }
-            if targetLocation.float2 != _editingItem.points[0].location {
-                _editingItem.addPointSample(location: targetLocation)
-                delegate.setNeedsDisplay()
-            }
+            _editingItem.to = to
+            delegate.setNeedsDisplay()
         }
+    }
+
+    func setCursor() {
+        NSCursor.crosshair.set()
     }
 }
 
-class RectangleTool: FreehandTool {
-    override func mouseDragged(with event: NSEvent, location: CGPoint) {
+class RectangleTool: Tool {
+    private var _editingItem: RectangleItem? = nil
+    var editingItem: (any ToolEditingItem)? {
+        _editingItem
+    }
+    unowned let delegate: any ToolDelegate
+
+    required init(delegate: any ToolDelegate) {
+        self.delegate = delegate
+    }
+
+    func commit() {
+        if let item = _editingItem.take() {
+            delegate.commit(item: item)
+        }
+    }
+
+    func mouseDown(with event: NSEvent, location: CGPoint) {
+        let item = RectangleItem(color: .from(delegate.toolbarDataModel.strokeColor), strokeWidth: delegate.toolbarDataModel.strokeWidth)
+        item.from = location.float2
+        item.to = item.from
+        _editingItem = item
+        delegate.setNeedsDisplay()
+    }
+
+    func mouseUp(with event: NSEvent, location: CGPoint) {
+        commit()
+    }
+
+    func mouseDragged(with event: NSEvent, location: CGPoint) {
         if let _editingItem {
-            guard _editingItem.points.count > 0 else {
-                super.mouseDragged(with: event, location: location)
-                return
-            }
-            while _editingItem.points.count > 1 {
-                _editingItem.popLastSample()
-            }
-            let origin = CGPoint.from(_editingItem.points[0].location)
-            let targetLocation: CGPoint
+            let from = _editingItem.from
+            let to: SIMD2<Float>
+
             if NSEvent.modifierFlags.contains(.shift) {
-                let diffX = location.x - origin.x
-                let diffY = location.y - origin.y
-                let length = min(abs(diffX), abs(diffY));
-                targetLocation = .init(x: origin.x + (diffX >= 0 ? length : -length), y: origin.y + (diffY >= 0 ? length : -length))
+                let diffX = Float(location.x) - from.x
+                let diffY = Float(location.y) - from.y
+                let length = max(abs(diffX), abs(diffY));
+                to = .init(x: from.x + (diffX >= 0 ? length : -length), y: from.y + (diffY >= 0 ? length : -length))
             } else {
-                targetLocation = location
+                to = location.float2
             }
-            if origin == targetLocation {
-                return
-            }
-            if origin.x != targetLocation.x && origin.y != targetLocation.y {
-                _editingItem.addPointSample(location: .init(x: origin.x, y: targetLocation.y))
-                _editingItem.addPointSample(location: targetLocation)
-                _editingItem.addPointSample(location: .init(x: targetLocation.x, y: origin.y))
-                _editingItem.addPointSample(location: origin)
-            } else {
-                _editingItem.addPointSample(location: targetLocation)
-            }
+            _editingItem.to = to
             delegate.setNeedsDisplay()
         }
+    }
+
+    func setCursor() {
+        NSCursor.crosshair.set()
     }
 }
 
