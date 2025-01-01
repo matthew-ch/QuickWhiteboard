@@ -33,8 +33,14 @@ protocol Tool: AnyObject {
     func setCursor() -> Void
 }
 
+extension Tool {
+    func setCursor() {
+        NSCursor.crosshair.set()
+    }
+}
+
 class FreehandTool: Tool {
-    private var _editingItem: FreehandItem? = nil
+    private var _editingItem: FreehandItem?
     var editingItem: (any ToolEditingItem)? {
         _editingItem
     }
@@ -51,7 +57,7 @@ class FreehandTool: Tool {
     }
     
     func mouseDown(with event: NSEvent, location: CGPoint) {
-        let item = FreehandItem(color: .from(delegate.toolbarDataModel.strokeColor), strokeWidth: delegate.toolbarDataModel.strokeWidth)
+        let item = FreehandItem(strokeColor: .from(delegate.toolbarDataModel.strokeColor), strokeWidth: delegate.toolbarDataModel.strokeWidth)
         item.addPointSample(location: location)
         _editingItem = item
         delegate.setNeedsDisplay()
@@ -67,17 +73,13 @@ class FreehandTool: Tool {
             delegate.setNeedsDisplay()
         }
     }
-    
-    func setCursor() {
-        NSCursor.crosshair.set()
-    }
 }
 
 class LineTool: Tool {
     static let dirXs = SIMD8<Float>(arrayLiteral: 0.0, halfOfSqrt2, 1.0, halfOfSqrt2, 0.0, -halfOfSqrt2, -1.0, -halfOfSqrt2)
     static let dirYs = SIMD8<Float>(arrayLiteral: 1.0, halfOfSqrt2, 0.0, -halfOfSqrt2, -1.0, -halfOfSqrt2, 0.0, halfOfSqrt2)
 
-    private var _editingItem: LineItem? = nil
+    private var _editingItem: LineItem?
     var editingItem: (any ToolEditingItem)? {
         _editingItem
     }
@@ -94,7 +96,7 @@ class LineTool: Tool {
     }
 
     func mouseDown(with event: NSEvent, location: CGPoint) {
-        let item = LineItem(color: .from(delegate.toolbarDataModel.strokeColor), strokeWidth: delegate.toolbarDataModel.strokeWidth)
+        let item = LineItem(strokeColor: .from(delegate.toolbarDataModel.strokeColor), strokeWidth: delegate.toolbarDataModel.strokeWidth)
         item.from = location.float2
         item.to = item.from
         _editingItem = item
@@ -130,14 +132,10 @@ class LineTool: Tool {
             delegate.setNeedsDisplay()
         }
     }
-
-    func setCursor() {
-        NSCursor.crosshair.set()
-    }
 }
 
 class RectangleTool: Tool {
-    private var _editingItem: RectangleItem? = nil
+    private var _editingItem: RectangleItem?
     var editingItem: (any ToolEditingItem)? {
         _editingItem
     }
@@ -154,7 +152,7 @@ class RectangleTool: Tool {
     }
 
     func mouseDown(with event: NSEvent, location: CGPoint) {
-        let item = RectangleItem(color: .from(delegate.toolbarDataModel.strokeColor), strokeWidth: delegate.toolbarDataModel.strokeWidth)
+        let item = RectangleItem(strokeColor: .from(delegate.toolbarDataModel.strokeColor), strokeWidth: delegate.toolbarDataModel.strokeWidth)
         item.from = location.float2
         item.to = item.from
         _editingItem = item
@@ -182,9 +180,44 @@ class RectangleTool: Tool {
             delegate.setNeedsDisplay()
         }
     }
+}
 
-    func setCursor() {
-        NSCursor.crosshair.set()
+class EllipseTool: Tool {
+    private var _editingItem: EllipseItem?
+    var editingItem: (any ToolEditingItem)? {
+        return _editingItem
+    }
+
+    unowned var delegate: any ToolDelegate
+    required init(delegate: any ToolDelegate) {
+        self.delegate = delegate
+    }
+    
+    func commit() {
+        if let item = _editingItem.take() {
+            delegate.commit(item: item)
+        }
+    }
+    
+    func mouseDown(with event: NSEvent, location: CGPoint) {
+        let item = EllipseItem(strokeColor: .from(delegate.toolbarDataModel.strokeColor), strokeWidth: delegate.toolbarDataModel.strokeWidth)
+        item.from = location.float2
+        item.to = item.from
+        _editingItem = item
+        delegate.setNeedsDisplay()
+    }
+    
+    func mouseUp(with event: NSEvent, location: CGPoint) {
+        commit()
+    }
+    
+    func mouseDragged(with event: NSEvent, location: CGPoint) {
+        if let _editingItem {
+            _editingItem.isCircle = NSEvent.modifierFlags.contains(.shift)
+            _editingItem.isCenterMode = NSEvent.modifierFlags.contains(.option)
+            _editingItem.to = location.float2
+            delegate.setNeedsDisplay()
+        }
     }
 }
 

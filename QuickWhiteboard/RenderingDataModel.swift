@@ -10,7 +10,6 @@ import CoreGraphics
 import Metal
 import MetalKit
 import simd
-import Accelerate
 
 @MainActor
 protocol RenderItem: AnyObject, ToolEditingItem {
@@ -39,6 +38,38 @@ final class ErasedItems: ToolEditingItem {
 }
 
 class DrawingItem: RenderItem {
+
+    @propertyWrapper
+    @MainActor
+    struct DirtyMarking<Value> {
+
+        @available(*, unavailable)
+        var wrappedValue: Value {
+            get { fatalError("only works on instance properties of classes") }
+            set { fatalError("only works on instance properties of classes") }
+        }
+
+        private var stored: Value
+
+        init(wrappedValue: Value) {
+            self.stored = wrappedValue
+        }
+
+        static subscript<EnclosingType: DrawingItem>(
+            _enclosingInstance instance: EnclosingType,
+            wrapped wrappedKeyPath: ReferenceWritableKeyPath<EnclosingType, Value>,
+            storage storageKeyPath: ReferenceWritableKeyPath<EnclosingType, Self>
+        ) -> Value {
+            get {
+                instance[keyPath: storageKeyPath].stored
+            }
+            set {
+                instance[keyPath: storageKeyPath].stored = newValue
+                instance.markAsDirty()
+            }
+        }
+    }
+
     var points: [PointSample] {
         []
     }
@@ -48,13 +79,13 @@ class DrawingItem: RenderItem {
 
     var hidden: Bool = false
 
-    let color: SIMD4<Float>
+    let strokeColor: SIMD4<Float>
     let strokeWidth: Float
 
-    fileprivate var vertexBuffer: (any MTLBuffer)?
+    private var vertexBuffer: (any MTLBuffer)?
 
-    init(color: CGColor, strokeWidth: CGFloat) {
-        self.color = color.float4
+    init(strokeColor: CGColor, strokeWidth: CGFloat) {
+        self.strokeColor = strokeColor.float4
         self.strokeWidth = Float(strokeWidth)
     }
 
@@ -64,16 +95,7 @@ class DrawingItem: RenderItem {
         let nextLocation = nextPoint?.location
 
         let pointTriangleCount = max(Int(ceilf(Float.pi * strokeWidth / 2.0)), 4)
-        let sectorAngle = Float.pi * 2.0 / Float(pointTriangleCount)
-        let angles = (0..<pointTriangleCount).map({ sectorAngle * Float($0) })
-        var cosValues = Array<Float>(repeating: 0.0, count: pointTriangleCount)
-        var sinValues = Array<Float>(repeating: 0.0, count: pointTriangleCount)
-        vForce.sincos(angles, sinResult: &sinValues, cosResult: &cosValues)
-
-        var points: [SIMD2<Float>] = []
-        for i in 0..<pointTriangleCount {
-            points.append(.init(x: cosValues[i], y: sinValues[i]))
-        }
+        var points: [SIMD2<Float>] = divideUnitCircle(count: pointTriangleCount)
         points.append(points[0])
         let radius = strokeWidth / 2.0
         var visibleIndices = Array(0..<pointTriangleCount)
@@ -131,21 +153,22 @@ class DrawingItem: RenderItem {
         }
         return (vertexBuffer!, vertexBuffer!.length / MemoryLayout<SIMD2<Float>>.size)
     }
+
+    func markAsDirty() {
+        vertexBuffer = nil
+    }
 }
 
 final class FreehandItem: DrawingItem {
-    private var _points: [PointSample] = [] {
-        didSet {
-            vertexBuffer = nil
-            _boundingRect = nil
-        }
-    }
+
+    @DirtyMarking
+    private var _points: [PointSample] = []
 
     override var points: [PointSample] {
         _points
     }
 
-    private var _boundingRect: CGRect? = CGRect(origin: .init(x: CGFloat.infinity, y: CGFloat.infinity), size: .zero)
+    private var _boundingRect: CGRect?
     override var boundingRect: CGRect {
         if _boundingRect == nil {
             updateBoundingRect()
@@ -155,6 +178,7 @@ final class FreehandItem: DrawingItem {
 
     private func updateBoundingRect() {
         if points.isEmpty {
+            _boundingRect = CGRect(origin: .init(x: CGFloat.infinity, y: CGFloat.infinity), size: .zero)
             return
         }
         var minxy = SIMD2<Float>(x: Float.infinity, y: Float.infinity)
@@ -164,6 +188,11 @@ final class FreehandItem: DrawingItem {
             maxxy = simd_max(maxxy, point.location + strokeWidth)
         }
         _boundingRect = CGRect(origin: .from(minxy), size: .from(maxxy - minxy))
+    }
+
+    override func markAsDirty() {
+        super.markAsDirty()
+        _boundingRect = nil
     }
 
     func addPointSample(location: CGPoint) {
@@ -187,17 +216,11 @@ final class LineItem: DrawingItem {
         return CGRect(origin: .from(center - dimens / 2.0), size: .from(dimens))
     }
 
-    var from: SIMD2<Float> = .zero {
-        didSet {
-            vertexBuffer = nil
-        }
-    }
+    @DirtyMarking
+    var from: SIMD2<Float> = .zero
 
-    var to: SIMD2<Float> = .zero {
-        didSet {
-            vertexBuffer = nil
-        }
-    }
+    @DirtyMarking
+    var to: SIMD2<Float> = .zero
 }
 
 final class RectangleItem: DrawingItem {
@@ -224,15 +247,101 @@ final class RectangleItem: DrawingItem {
         return CGRect(origin: .from(center - dimens / 2.0), size: .from(dimens))
     }
 
-    var from: SIMD2<Float> = .zero {
-        didSet {
-            vertexBuffer = nil
+    @DirtyMarking
+    var from: SIMD2<Float> = .zero
+
+    @DirtyMarking
+    var to: SIMD2<Float> = .zero
+}
+
+final class EllipseItem: DrawingItem {
+
+    private var _points: [PointSample]?
+
+    override var points: [PointSample] {
+        if _points == nil {
+            updatePoints()
+        }
+        return _points!
+    }
+
+    override var boundingRect: CGRect {
+        let (center, rx, ry) = calcCenterRxRy()
+        let rs = SIMD2<Float>(x: rx + strokeWidth / 2.0, y: ry + strokeWidth / 2.0)
+        return CGRect(origin: .from(center - rs), size: .from(rs * 2.0))
+    }
+
+    @DirtyMarking
+    var from: SIMD2<Float> = .zero
+
+    @DirtyMarking
+    var to: SIMD2<Float> = .zero
+
+    @DirtyMarking
+    var isCircle = false
+
+    @DirtyMarking
+    var isCenterMode = false
+
+    private func calcCenterRxRy() -> (SIMD2<Float>, Float, Float) {
+        let center: SIMD2<Float>
+        if isCircle {
+            let r: Float
+            if isCenterMode {
+                center = from
+                r = simd_abs(to - center).max()
+            } else {
+                let d = simd_abs(to - from).max()
+                r = d / 2.0
+                center = from + .init(x: to.x >= from .x ? r : -r, y: to.y >= from.y ? r: -r)
+            }
+            return (center, r, r)
+        } else {
+            if isCenterMode {
+                center = from
+            } else {
+                center = (from + to) / 2.0
+            }
+            let uv = to - center
+            let rx = abs(uv.x)
+            let ry = abs(uv.y)
+            return (center, rx, ry)
         }
     }
-    var to: SIMD2<Float> = .zero {
-        didSet {
-            vertexBuffer = nil
+
+    private func updatePoints() {
+        if from == to {
+            _points = [PointSample(location: from)]
+            return
         }
+        let (origin, rx, ry) = calcCenterRxRy()
+        if rx == 0.0 || ry == 0.0 {
+            _points = [
+                PointSample(location: origin - .init(x: rx, y: ry)),
+                PointSample(location: origin + .init(x: rx, y: ry))
+            ]
+            return
+        }
+        let pointCount = max((Int(ceilf(Float.pi * max(rx, ry) / 2.0)) >> 3) << 3, 8)
+        var points = divideUnitCircle(count: pointCount)
+        let rxSqr = rx * rx
+        let rySqr = ry * ry
+        let t = rxSqr * rySqr
+        for i in 0..<pointCount {
+            let costheta = points[i].x
+            let sintheta = points[i].y
+            let r = sqrtf(t / (rySqr * costheta * costheta + rxSqr * sintheta * sintheta))
+            points[i] = points[i] * r + origin
+        }
+        points.append(points[0])
+        _points = points.map({ p in
+            PointSample(location: p)
+        })
+    }
+
+    override func markAsDirty() {
+        super.markAsDirty()
+        _points = nil
     }
 }
 

@@ -115,7 +115,7 @@ final class Renderer {
                 encoder.setRenderPipelineState(simplePipelineState)
                 let (vertexBuffer, vertexCount) = drawing.upload(to: device)
                 encoder.setVertexBuffer(vertexBuffer, offset: 0, index: 1)
-                var color = drawing.color
+                var color = drawing.strokeColor
                 encoder.setFragmentBytes(&color, length: MemoryLayout<SIMD4<Float>>.size, index: 0)
                 
                 encoder.drawPrimitives(type: .triangle, vertexStart: 0, vertexCount: vertexCount)

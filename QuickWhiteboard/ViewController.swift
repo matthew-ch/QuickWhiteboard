@@ -23,6 +23,7 @@ class ViewController: NSViewController {
     private lazy var freehandTool = FreehandTool(delegate: self)
     private lazy var lineTool = LineTool(delegate: self)
     private lazy var rectangleTool = RectangleTool(delegate: self)
+    private lazy var ellipseTool = EllipseTool(delegate: self)
     private lazy var eraserTool = EraserTool(delegate: self)
     private lazy var imageTool = ImageTool(delegate: self)
 
@@ -34,6 +35,8 @@ class ViewController: NSViewController {
             lineTool
         case .rectangle:
             rectangleTool
+        case .ellipse:
+            ellipseTool
         case .eraser:
             eraserTool
         case .image:

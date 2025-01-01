@@ -16,6 +16,7 @@ enum ToolIdentifier: Equatable, Hashable, Identifiable, CaseIterable {
     case freehand
     case line
     case rectangle
+    case ellipse
     case eraser
     case image
     
@@ -27,6 +28,8 @@ enum ToolIdentifier: Equatable, Hashable, Identifiable, CaseIterable {
             "line.diagonal"
         case .rectangle:
             "rectangle"
+        case .ellipse:
+            "oval"
         case .eraser:
             "xmark.circle"
         case .image:
@@ -42,8 +45,10 @@ enum ToolIdentifier: Equatable, Hashable, Identifiable, CaseIterable {
             "S"
         case .rectangle:
             "R"
-        case .eraser:
+        case .ellipse:
             "E"
+        case .eraser:
+            "X"
         case .image:
             "I"
         }
@@ -57,6 +62,8 @@ enum ToolIdentifier: Equatable, Hashable, Identifiable, CaseIterable {
             "\(localizedString("Draw line")) (\(shortcutKey))"
         case .rectangle:
             "\(localizedString("Draw rectangle")) (\(shortcutKey)"
+        case .ellipse:
+            "\(localizedString("Draw ellipse")) (\(shortcutKey)"
         case .eraser:
             "\(localizedString("Erase drawings")) (\(shortcutKey))"
         case .image:
