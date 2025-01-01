@@ -37,38 +37,95 @@ final class ErasedItems: ToolEditingItem {
     }
 }
 
-class DrawingItem: RenderItem {
+@MainActor
+protocol CanMarkAsDirty: AnyObject {
+    func markAsDirty() -> Void
+}
 
-    @propertyWrapper
-    @MainActor
-    struct DirtyMarking<Value> {
+@propertyWrapper
+@MainActor
+struct DirtyMarking<Value> {
 
-        @available(*, unavailable)
-        var wrappedValue: Value {
-            get { fatalError("only works on instance properties of classes") }
-            set { fatalError("only works on instance properties of classes") }
+    @available(*, unavailable)
+    var wrappedValue: Value {
+        get { fatalError("only works on instance properties of classes") }
+        set { fatalError("only works on instance properties of classes") }
+    }
+
+    private var stored: Value
+
+    init(wrappedValue: Value) {
+        self.stored = wrappedValue
+    }
+
+    static subscript<EnclosingType: CanMarkAsDirty>(
+        _enclosingInstance instance: EnclosingType,
+        wrapped wrappedKeyPath: ReferenceWritableKeyPath<EnclosingType, Value>,
+        storage storageKeyPath: ReferenceWritableKeyPath<EnclosingType, Self>
+    ) -> Value {
+        get {
+            instance[keyPath: storageKeyPath].stored
         }
-
-        private var stored: Value
-
-        init(wrappedValue: Value) {
-            self.stored = wrappedValue
-        }
-
-        static subscript<EnclosingType: DrawingItem>(
-            _enclosingInstance instance: EnclosingType,
-            wrapped wrappedKeyPath: ReferenceWritableKeyPath<EnclosingType, Value>,
-            storage storageKeyPath: ReferenceWritableKeyPath<EnclosingType, Self>
-        ) -> Value {
-            get {
-                instance[keyPath: storageKeyPath].stored
-            }
-            set {
-                instance[keyPath: storageKeyPath].stored = newValue
-                instance.markAsDirty()
-            }
+        set {
+            instance[keyPath: storageKeyPath].stored = newValue
+            instance.markAsDirty()
         }
     }
+}
+
+@MainActor
+protocol HasGeneration: AnyObject {
+    var generation: Int { get }
+}
+
+@propertyWrapper
+@MainActor
+struct OnDemand<EnclosingType: HasGeneration, Value> {
+
+    @available(*, unavailable)
+    var wrappedValue: Value {
+        get { fatalError("only works on instance properties of classes") }
+        set { fatalError("only works on instance properties of classes") }
+    }
+
+    static subscript(
+        _enclosingInstance instance: EnclosingType,
+        wrapped wrappedKeyPath: ReferenceWritableKeyPath<EnclosingType, Value>,
+        storage storageKeyPath: ReferenceWritableKeyPath<EnclosingType, Self>
+    ) -> Value {
+        get {
+            let builderKeyPath = instance[keyPath: storageKeyPath].builderKeyPath
+            return instance[keyPath: storageKeyPath].updatedIfNeeded(generation: instance.generation) {
+                instance[keyPath: builderKeyPath]
+            }
+        }
+        set {
+            fatalError("no setter supported")
+        }
+    }
+
+    typealias BuilderKeyPath = KeyPath<EnclosingType, Value>
+
+    private let builderKeyPath: BuilderKeyPath
+    private let once: Bool
+    private var cachedValue: Optional<Value> = nil
+    private var generation = 0
+
+    init(_ arg: BuilderKeyPath, once: Bool = false) {
+        self.builderKeyPath = arg
+        self.once = once
+    }
+
+    private mutating func updatedIfNeeded(generation: Int, valueFn: () -> Value) -> Value {
+        if cachedValue == nil || !once && self.generation < generation {
+            cachedValue = valueFn()
+            self.generation = generation
+        }
+        return cachedValue!
+    }
+}
+
+class DrawingItem: RenderItem, CanMarkAsDirty, HasGeneration {
 
     var points: [PointSample] {
         []
@@ -82,7 +139,10 @@ class DrawingItem: RenderItem {
     let strokeColor: SIMD4<Float>
     let strokeWidth: Float
 
-    private var vertexBuffer: (any MTLBuffer)?
+    private(set) var generation = 1
+
+    @OnDemand(\DrawingItem.generateVertexBuffer)
+    private var vertexBuffer: (any MTLBuffer)
 
     init(strokeColor: CGColor, strokeWidth: CGFloat) {
         self.strokeColor = strokeColor.float4
@@ -146,16 +206,20 @@ class DrawingItem: RenderItem {
         return result
     }
 
-    func upload(to device: MTLDevice) -> (vetexBuffer: any MTLBuffer, vertexCount: Int) {
-        if vertexBuffer == nil {
-            let vertexes = generateVertexes(points: points)
-            vertexBuffer = device.makeBuffer(bytes: vertexes, length: MemoryLayout<SIMD2<Float>>.size * max(vertexes.count, 1))!
-        }
-        return (vertexBuffer!, vertexBuffer!.length / MemoryLayout<SIMD2<Float>>.size)
+    private var device: (any MTLDevice)?
+
+    private var generateVertexBuffer: any MTLBuffer {
+        let vertexes = generateVertexes(points: points)
+        return device!.makeBuffer(bytes: vertexes, length: MemoryLayout<SIMD2<Float>>.size * max(vertexes.count, 1))!
     }
 
-    func markAsDirty() {
-        vertexBuffer = nil
+    func upload(to device: MTLDevice) -> (vetexBuffer: any MTLBuffer, vertexCount: Int) {
+        self.device = device
+        return (vertexBuffer, vertexBuffer.length / MemoryLayout<SIMD2<Float>>.size)
+    }
+
+    final func markAsDirty() {
+        generation += 1
     }
 }
 
@@ -168,15 +232,13 @@ final class FreehandItem: DrawingItem {
         _points
     }
 
-    private var _boundingRect: CGRect?
+    @OnDemand(\FreehandItem.resolvedBoundingRect)
+    private var _boundingRect: CGRect
     override var boundingRect: CGRect {
-        if _boundingRect == nil {
-            _boundingRect = calculateBoundingRect()
-        }
-        return _boundingRect!
+        _boundingRect
     }
 
-    private func calculateBoundingRect() -> CGRect {
+    private var resolvedBoundingRect: CGRect {
         if points.isEmpty {
             return CGRect(origin: .init(x: CGFloat.infinity, y: CGFloat.infinity), size: .zero)
         }
@@ -187,11 +249,6 @@ final class FreehandItem: DrawingItem {
             maxxy = simd_max(maxxy, point.location + strokeWidth)
         }
         return CGRect(origin: .from(minxy), size: .from(maxxy - minxy))
-    }
-
-    override func markAsDirty() {
-        super.markAsDirty()
-        _boundingRect = nil
     }
 
     func addPointSample(location: CGPoint) {
@@ -220,20 +277,13 @@ final class LineItem: DrawingItem {
         }
     }
 
-    private var _endPoint: SIMD2<Float>?
-    private var endPoint: SIMD2<Float> {
-        if _endPoint == nil {
-            _endPoint = resolveEndPoint()
-        }
-        return _endPoint!
-    }
+    @OnDemand(\LineItem.resolvedEndPoint)
+    private var endPoint: SIMD2<Float>
 
-    private var _boundingRect: CGRect?
+    @OnDemand(\LineItem.resolvedBoundingRect)
+    private var _boundingRect: CGRect
     override var boundingRect: CGRect {
-        if _boundingRect == nil {
-            _boundingRect = calculateBoundingRect()
-        }
-        return _boundingRect!
+        _boundingRect
     }
 
     @DirtyMarking
@@ -251,7 +301,7 @@ final class LineItem: DrawingItem {
     static let dirXs = SIMD8<Float>(arrayLiteral: 0.0, halfOfSqrt2, 1.0, halfOfSqrt2, 0.0, -halfOfSqrt2, -1.0, -halfOfSqrt2)
     static let dirYs = SIMD8<Float>(arrayLiteral: 1.0, halfOfSqrt2, 0.0, -halfOfSqrt2, -1.0, -halfOfSqrt2, 0.0, halfOfSqrt2)
 
-    private func calculateBoundingRect() -> CGRect {
+    private var resolvedBoundingRect: CGRect {
         let to = endPoint
         if isCenterMode {
             let halfDimens = simd_abs(to - from) + strokeWidth / 2.0
@@ -263,7 +313,7 @@ final class LineItem: DrawingItem {
         }
     }
 
-    private func resolveEndPoint() -> SIMD2<Float> {
+    private var resolvedEndPoint: SIMD2<Float> {
         if isAligning {
             let v = to - from
             let dots = Self.dirXs * v.x + Self.dirYs * v.y
@@ -279,12 +329,6 @@ final class LineItem: DrawingItem {
             return from + u
         }
         return to
-    }
-
-    override func markAsDirty() {
-        super.markAsDirty()
-        _endPoint = nil
-        _boundingRect = nil
     }
 }
 
@@ -317,21 +361,14 @@ final class RectangleItem: DrawingItem {
         }
     }
 
-    private var _boundingRect: CGRect?
+    @OnDemand(\RectangleItem.resolvedBoundingRect)
+    private var _boundingRect: CGRect
     override var boundingRect: CGRect {
-        if _boundingRect == nil {
-            _boundingRect = calculateBoundingRect()
-        }
-        return _boundingRect!
+        _boundingRect
     }
 
-    private var _endPoint: SIMD2<Float>?
-    private var endPoint: SIMD2<Float> {
-        if _endPoint == nil {
-            _endPoint = resolveEndPoint()
-        }
-        return _endPoint!
-    }
+    @OnDemand(\RectangleItem.resolvedEndPoint)
+    private var endPoint: SIMD2<Float>
 
     @DirtyMarking
     var from: SIMD2<Float> = .zero
@@ -345,7 +382,7 @@ final class RectangleItem: DrawingItem {
     @DirtyMarking
     var isSquare = false
 
-    private func calculateBoundingRect() -> CGRect {
+    private var resolvedBoundingRect: CGRect {
         let to = endPoint
         if isCenterMode {
             let center = from
@@ -358,7 +395,7 @@ final class RectangleItem: DrawingItem {
         }
     }
 
-    private func resolveEndPoint() -> SIMD2<Float> {
+    private var resolvedEndPoint: SIMD2<Float> {
         if isSquare {
             let diff = to - from
             let length = abs(diff).max()
@@ -366,31 +403,20 @@ final class RectangleItem: DrawingItem {
         }
         return to
     }
-
-    override func markAsDirty() {
-        super.markAsDirty()
-        _endPoint = nil
-        _boundingRect = nil
-    }
 }
 
 final class EllipseItem: DrawingItem {
 
-    private var _points: [PointSample]?
-
+    @OnDemand(\EllipseItem.resolvedPoints)
+    private var _points: [PointSample]
     override var points: [PointSample] {
-        if _points == nil {
-            updatePoints()
-        }
-        return _points!
+        _points
     }
 
-    private var _boundingRect: CGRect?
+    @OnDemand(\EllipseItem.resolvedBoundingRect)
+    private var _boundingRect: CGRect
     override var boundingRect: CGRect {
-        if _boundingRect == nil {
-            _boundingRect = calculateBoundingRect()
-        }
-        return _boundingRect!
+        _boundingRect
     }
 
     @DirtyMarking
@@ -431,24 +457,22 @@ final class EllipseItem: DrawingItem {
         }
     }
 
-    private func calculateBoundingRect() -> CGRect {
+    private var resolvedBoundingRect: CGRect {
         let (center, rx, ry) = calcCenterRxRy()
         let rs = SIMD2<Float>(x: rx + strokeWidth / 2.0, y: ry + strokeWidth / 2.0)
         return CGRect(origin: .from(center - rs), size: .from(rs * 2.0))
     }
 
-    private func updatePoints() {
+    private var resolvedPoints: [PointSample] {
         if from == to {
-            _points = [PointSample(location: from)]
-            return
+            return [PointSample(location: from)]
         }
         let (origin, rx, ry) = calcCenterRxRy()
         if rx == 0.0 || ry == 0.0 {
-            _points = [
+            return [
                 PointSample(location: origin - .init(x: rx, y: ry)),
                 PointSample(location: origin + .init(x: rx, y: ry))
             ]
-            return
         }
         let pointCount = max((Int(ceilf(Float.pi * max(rx, ry) / 2.0)) >> 3) << 3, 8)
         var points = divideUnitCircle(count: pointCount)
@@ -462,45 +486,43 @@ final class EllipseItem: DrawingItem {
             points[i] = points[i] * r + origin
         }
         points.append(points[0])
-        _points = points.map({ p in
+        return points.map({ p in
             PointSample(location: p)
         })
     }
-
-    override func markAsDirty() {
-        super.markAsDirty()
-        _points = nil
-        _boundingRect = nil
-    }
 }
 
-final class ImageItem: RenderItem {
+final class ImageItem: RenderItem, CanMarkAsDirty, HasGeneration {
     private(set) var image: CGImage
-    var center: SIMD2<Float> {
-        didSet {
-            vertexBuffer = nil
-            updateBoudingRect()
-        }
-    }
+
+    @DirtyMarking
+    var center: SIMD2<Float>
     let size: SIMD2<Float>
-    var scale: Float = 1.0 {
-        didSet {
-            vertexBuffer = nil
-            updateBoudingRect()
-        }
+
+    @DirtyMarking
+    var scale: Float = 1.0
+
+    @DirtyMarking
+    var rotation: Float = 0.0
+
+    @OnDemand(\ImageItem.resolvedBoundingRect)
+    private var _boundingRect: CGRect
+    var boundingRect: CGRect {
+        _boundingRect
     }
-    var rotation: Float = 0.0 {
-        didSet {
-            vertexBuffer = nil
-            updateBoudingRect()
-        }
-    }
-    private(set) var boundingRect: CGRect = .zero
+
     var hidden: Bool = false
 
-    private var texture: (any MTLTexture)?
-    private var vertexBuffer: (any MTLBuffer)?
-    private var uvBuffer: (any MTLBuffer)?
+    private var device: (any MTLDevice)?
+
+    @OnDemand(\ImageItem.resolvedTexture, once: true)
+    private var texture: (any MTLTexture)
+
+    @OnDemand(\ImageItem.resolvedVertexBuffer)
+    private var vertexBuffer: (any MTLBuffer)
+
+    @OnDemand(\ImageItem.resolvedUVBuffer, once: true)
+    private var uvBuffer: (any MTLBuffer)
     
     static var textureLoader: MTKTextureLoader!
     static let uvs: [SIMD2<Float>] = [
@@ -511,55 +533,63 @@ final class ImageItem: RenderItem {
         .init(0.0, 1.0),
         .init(1.0, 1.0),
     ]
-    
+
+    private(set) var generation: Int = 1
+
+    func markAsDirty() {
+        generation += 1
+    }
+
     init(image: CGImage, center: SIMD2<Float>, size: SIMD2<Float>) {
         self.image = image
         self.center = center
         self.size = size
-        self.updateBoudingRect()
     }
-    
-    private func updateBoudingRect() {
+
+    private var resolvedTexture: any MTLTexture {
+        try! Self.textureLoader.newTexture(cgImage: image, options: [
+            .allocateMipmaps: NSNumber(booleanLiteral: false),
+            .textureStorageMode: NSNumber(value: MTLStorageMode.private.rawValue),
+            .textureUsage: NSNumber(value: MTLTextureUsage.shaderRead.rawValue),
+            .SRGB: NSNumber(booleanLiteral: false),
+        ])
+    }
+
+    private var resolvedVertexBuffer: any MTLBuffer {
+        let matrix = matrix2DRotateAndScale(radian: rotation, scale: scale)
+        let p1 = simd_mul(matrix, size * 0.5)
+        let p2 = simd_mul(matrix, size * SIMD2(0.5, -0.5))
+
+        let vertexes: [SIMD2<Float>] = [
+            center - p1,
+            center + p1,
+            center - p2,
+            center + p1,
+            center - p1,
+            center + p2,
+        ]
+        return device!.makeBuffer(bytes: vertexes, length: MemoryLayout<SIMD2<Float>>.size * 6)!
+    }
+
+    private var resolvedUVBuffer: any MTLBuffer {
+        device!.makeBuffer(bytes: Self.uvs, length: MemoryLayout<SIMD2<Float>>.size * 6)!
+    }
+
+    private var resolvedBoundingRect: CGRect {
         let matrix = matrix2DRotateAndScale(radian: rotation, scale: scale)
         let p1 = simd_mul(matrix, size * 0.5)
         let p2 = simd_mul(matrix, size * SIMD2(0.5, -0.5))
         let dx = max(abs(p1.x), abs(p2.x))
         let dy = max(abs(p1.y), abs(p2.y))
         let half_size = SIMD2(dx, dy)
-        boundingRect = .init(origin: .from(center - half_size), size: .from(half_size * 2.0))
+        return .init(origin: .from(center - half_size), size: .from(half_size * 2.0))
     }
 
     func upload(to device: MTLDevice) -> (texture: any MTLTexture, vertexBuffer: any MTLBuffer, uvBuffer: any MTLBuffer, vertexCount: Int) {
         if Self.textureLoader == nil {
             Self.textureLoader = MTKTextureLoader(device: device)
         }
-        if texture == nil {
-            texture = try! Self.textureLoader.newTexture(cgImage: image, options: [
-                .allocateMipmaps: NSNumber(booleanLiteral: false),
-                .textureStorageMode: NSNumber(value: MTLStorageMode.private.rawValue),
-                .textureUsage: NSNumber(value: MTLTextureUsage.shaderRead.rawValue),
-                .SRGB: NSNumber(booleanLiteral: false),
-            ])
-        }
-        if vertexBuffer == nil {
-            let matrix = matrix2DRotateAndScale(radian: rotation, scale: scale)
-            let p1 = simd_mul(matrix, size * 0.5)
-            let p2 = simd_mul(matrix, size * SIMD2(0.5, -0.5))
-
-            let vertexes: [SIMD2<Float>] = [
-                center - p1,
-                center + p1,
-                center - p2,
-                center + p1,
-                center - p1,
-                center + p2,
-            ]
-            vertexBuffer = device.makeBuffer(bytes: vertexes, length: MemoryLayout<SIMD2<Float>>.size * 6)
-        }
-        if uvBuffer == nil {
-            uvBuffer = device.makeBuffer(bytes: Self.uvs, length: MemoryLayout<SIMD2<Float>>.size * 6)
-        }
-        return (texture!, vertexBuffer!, uvBuffer!, 6)
+        self.device = device
+        return (texture, vertexBuffer, uvBuffer, 6)
     }
-    
 }
