@@ -171,15 +171,14 @@ final class FreehandItem: DrawingItem {
     private var _boundingRect: CGRect?
     override var boundingRect: CGRect {
         if _boundingRect == nil {
-            updateBoundingRect()
+            _boundingRect = calculateBoundingRect()
         }
         return _boundingRect!
     }
 
-    private func updateBoundingRect() {
+    private func calculateBoundingRect() -> CGRect {
         if points.isEmpty {
-            _boundingRect = CGRect(origin: .init(x: CGFloat.infinity, y: CGFloat.infinity), size: .zero)
-            return
+            return CGRect(origin: .init(x: CGFloat.infinity, y: CGFloat.infinity), size: .zero)
         }
         var minxy = SIMD2<Float>(x: Float.infinity, y: Float.infinity)
         var maxxy = SIMD2<Float>(x: -Float.infinity, y: -Float.infinity)
@@ -187,7 +186,7 @@ final class FreehandItem: DrawingItem {
             minxy = simd_min(minxy, point.location - strokeWidth)
             maxxy = simd_max(maxxy, point.location + strokeWidth)
         }
-        _boundingRect = CGRect(origin: .from(minxy), size: .from(maxxy - minxy))
+        return CGRect(origin: .from(minxy), size: .from(maxxy - minxy))
     }
 
     override func markAsDirty() {
@@ -206,14 +205,35 @@ final class LineItem: DrawingItem {
         if from == to {
             return [PointSample(location: from)]
         } else {
-            return [PointSample(location: from), PointSample(location: to)]
+            let to = endPoint
+            if isCenterMode {
+                return [
+                    PointSample(location: from * 2.0 - to),
+                    PointSample(location: to),
+                ]
+            } else {
+                return [
+                    PointSample(location: from),
+                    PointSample(location: to),
+                ]
+            }
         }
     }
 
+    private var _endPoint: SIMD2<Float>?
+    private var endPoint: SIMD2<Float> {
+        if _endPoint == nil {
+            _endPoint = resolveEndPoint()
+        }
+        return _endPoint!
+    }
+
+    private var _boundingRect: CGRect?
     override var boundingRect: CGRect {
-        let center = (from + to) / 2.0
-        let dimens = simd_abs(from - to) + strokeWidth
-        return CGRect(origin: .from(center - dimens / 2.0), size: .from(dimens))
+        if _boundingRect == nil {
+            _boundingRect = calculateBoundingRect()
+        }
+        return _boundingRect!
     }
 
     @DirtyMarking
@@ -221,6 +241,51 @@ final class LineItem: DrawingItem {
 
     @DirtyMarking
     var to: SIMD2<Float> = .zero
+
+    @DirtyMarking
+    var isCenterMode = false
+
+    @DirtyMarking
+    var isAligning = false
+
+    static let dirXs = SIMD8<Float>(arrayLiteral: 0.0, halfOfSqrt2, 1.0, halfOfSqrt2, 0.0, -halfOfSqrt2, -1.0, -halfOfSqrt2)
+    static let dirYs = SIMD8<Float>(arrayLiteral: 1.0, halfOfSqrt2, 0.0, -halfOfSqrt2, -1.0, -halfOfSqrt2, 0.0, halfOfSqrt2)
+
+    private func calculateBoundingRect() -> CGRect {
+        let to = endPoint
+        if isCenterMode {
+            let halfDimens = simd_abs(to - from) + strokeWidth / 2.0
+            return CGRect(origin: .from(from - halfDimens), size: .from(halfDimens * 2.0))
+        } else {
+            let center = (from + to) / 2.0
+            let dimens = simd_abs(from - to) + strokeWidth
+            return CGRect(origin: .from(center - dimens / 2.0), size: .from(dimens))
+        }
+    }
+
+    private func resolveEndPoint() -> SIMD2<Float> {
+        if isAligning {
+            let v = to - from
+            let dots = Self.dirXs * v.x + Self.dirYs * v.y
+            var maxIndex = 0
+            var maxValue = dots[0]
+            for index in 1..<8 {
+                if dots[index] > maxValue {
+                    maxValue = dots[index]
+                    maxIndex = index
+                }
+            }
+            let u = SIMD2<Float>(Self.dirXs[maxIndex], Self.dirYs[maxIndex]) * maxValue
+            return from + u
+        }
+        return to
+    }
+
+    override func markAsDirty() {
+        super.markAsDirty()
+        _endPoint = nil
+        _boundingRect = nil
+    }
 }
 
 final class RectangleItem: DrawingItem {
@@ -228,7 +293,20 @@ final class RectangleItem: DrawingItem {
     override var points: [PointSample] {
         if from == to {
             return [PointSample(location: from)]
-        } else if from.x != to.x && from.y != to.y {
+        } else {
+            let to = endPoint
+            let from: SIMD2<Float>
+            if isCenterMode {
+                from = self.from * 2.0 - to
+            } else {
+                from = self.from
+            }
+            if to.x == from.x || to.y == from.y {
+                return [
+                    PointSample(location: from),
+                    PointSample(location: to),
+                ]
+            }
             return [
                 PointSample(location: from),
                 PointSample(location: .init(x: from.x, y: to.y)),
@@ -236,15 +314,23 @@ final class RectangleItem: DrawingItem {
                 PointSample(location: .init(x: to.x, y: from.y)),
                 PointSample(location: from),
             ]
-        } else {
-            return [PointSample(location: from), PointSample(location: to)]
         }
     }
 
+    private var _boundingRect: CGRect?
     override var boundingRect: CGRect {
-        let center = (from + to) / 2.0
-        let dimens = simd_abs(from - to) + strokeWidth
-        return CGRect(origin: .from(center - dimens / 2.0), size: .from(dimens))
+        if _boundingRect == nil {
+            _boundingRect = calculateBoundingRect()
+        }
+        return _boundingRect!
+    }
+
+    private var _endPoint: SIMD2<Float>?
+    private var endPoint: SIMD2<Float> {
+        if _endPoint == nil {
+            _endPoint = resolveEndPoint()
+        }
+        return _endPoint!
     }
 
     @DirtyMarking
@@ -252,6 +338,40 @@ final class RectangleItem: DrawingItem {
 
     @DirtyMarking
     var to: SIMD2<Float> = .zero
+
+    @DirtyMarking
+    var isCenterMode = false
+
+    @DirtyMarking
+    var isSquare = false
+
+    private func calculateBoundingRect() -> CGRect {
+        let to = endPoint
+        if isCenterMode {
+            let center = from
+            let halfDimens = simd_abs(to - from) + strokeWidth / 2.0
+            return CGRect(origin: .from(center - halfDimens), size: .from(halfDimens * 2.0))
+        } else {
+            let center = (from + to) / 2.0
+            let dimens = simd_abs(from - to) + strokeWidth
+            return CGRect(origin: .from(center - dimens / 2.0), size: .from(dimens))
+        }
+    }
+
+    private func resolveEndPoint() -> SIMD2<Float> {
+        if isSquare {
+            let diff = to - from
+            let length = abs(diff).max()
+            return .init(x: from.x + (diff.x >= 0 ? length : -length), y: from.y + (diff.y >= 0 ? length : -length))
+        }
+        return to
+    }
+
+    override func markAsDirty() {
+        super.markAsDirty()
+        _endPoint = nil
+        _boundingRect = nil
+    }
 }
 
 final class EllipseItem: DrawingItem {
@@ -265,10 +385,12 @@ final class EllipseItem: DrawingItem {
         return _points!
     }
 
+    private var _boundingRect: CGRect?
     override var boundingRect: CGRect {
-        let (center, rx, ry) = calcCenterRxRy()
-        let rs = SIMD2<Float>(x: rx + strokeWidth / 2.0, y: ry + strokeWidth / 2.0)
-        return CGRect(origin: .from(center - rs), size: .from(rs * 2.0))
+        if _boundingRect == nil {
+            _boundingRect = calculateBoundingRect()
+        }
+        return _boundingRect!
     }
 
     @DirtyMarking
@@ -309,6 +431,12 @@ final class EllipseItem: DrawingItem {
         }
     }
 
+    private func calculateBoundingRect() -> CGRect {
+        let (center, rx, ry) = calcCenterRxRy()
+        let rs = SIMD2<Float>(x: rx + strokeWidth / 2.0, y: ry + strokeWidth / 2.0)
+        return CGRect(origin: .from(center - rs), size: .from(rs * 2.0))
+    }
+
     private func updatePoints() {
         if from == to {
             _points = [PointSample(location: from)]
@@ -342,6 +470,7 @@ final class EllipseItem: DrawingItem {
     override func markAsDirty() {
         super.markAsDirty()
         _points = nil
+        _boundingRect = nil
     }
 }
 

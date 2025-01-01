@@ -76,9 +76,6 @@ class FreehandTool: Tool {
 }
 
 class LineTool: Tool {
-    static let dirXs = SIMD8<Float>(arrayLiteral: 0.0, halfOfSqrt2, 1.0, halfOfSqrt2, 0.0, -halfOfSqrt2, -1.0, -halfOfSqrt2)
-    static let dirYs = SIMD8<Float>(arrayLiteral: 1.0, halfOfSqrt2, 0.0, -halfOfSqrt2, -1.0, -halfOfSqrt2, 0.0, halfOfSqrt2)
-
     private var _editingItem: LineItem?
     var editingItem: (any ToolEditingItem)? {
         _editingItem
@@ -109,26 +106,9 @@ class LineTool: Tool {
 
     func mouseDragged(with event: NSEvent, location: CGPoint) {
         if let _editingItem {
-            let to: SIMD2<Float>
-
-            if !NSEvent.modifierFlags.contains(.shift) {
-                to = location.float2
-            } else {
-                let from = _editingItem.from
-                let v = location.float2 - from
-                let dots = Self.dirXs * v.x + Self.dirYs * v.y
-                var maxIndex = 0
-                var maxValue = dots[0]
-                for index in 1..<8 {
-                    if dots[index] > maxValue {
-                        maxValue = dots[index]
-                        maxIndex = index
-                    }
-                }
-                let u = SIMD2<Float>(Self.dirXs[maxIndex], Self.dirYs[maxIndex]) * maxValue
-                to = from + u
-            }
-            _editingItem.to = to
+            _editingItem.isCenterMode = NSEvent.modifierFlags.contains(.option)
+            _editingItem.isAligning = NSEvent.modifierFlags.contains(.shift)
+            _editingItem.to = location.float2
             delegate.setNeedsDisplay()
         }
     }
@@ -165,18 +145,9 @@ class RectangleTool: Tool {
 
     func mouseDragged(with event: NSEvent, location: CGPoint) {
         if let _editingItem {
-            let from = _editingItem.from
-            let to: SIMD2<Float>
-
-            if NSEvent.modifierFlags.contains(.shift) {
-                let diffX = Float(location.x) - from.x
-                let diffY = Float(location.y) - from.y
-                let length = max(abs(diffX), abs(diffY));
-                to = .init(x: from.x + (diffX >= 0 ? length : -length), y: from.y + (diffY >= 0 ? length : -length))
-            } else {
-                to = location.float2
-            }
-            _editingItem.to = to
+            _editingItem.isSquare = NSEvent.modifierFlags.contains(.shift)
+            _editingItem.isCenterMode = NSEvent.modifierFlags.contains(.option)
+            _editingItem.to = location.float2
             delegate.setNeedsDisplay()
         }
     }
