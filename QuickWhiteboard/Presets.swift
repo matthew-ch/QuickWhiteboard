@@ -9,33 +9,19 @@ import Foundation
 import Combine
 import AppKit
 
-class StrokePreset: NSObject, NSCoding, NSSecureCoding, Identifiable {
-    static let supportsSecureCoding: Bool = true
-
-    func encode(with coder: NSCoder) {
-        coder.encode(Double(width), forKey: "width")
-        coder.encode(color, forKey: "color")
-    }
-    
-    required init?(coder: NSCoder) {
-        self.width = coder.decodeDouble(forKey: "width")
-        guard let color = coder.decodeObject(of: NSColor.self, forKey: "color") else {
-            return nil
-        }
-        self.color = color
-        self.id = UUID()
-    }
-
-    init(width: CGFloat, color: NSColor) {
-        self.width = width
-        self.color = color
-        self.id = UUID()
-        super.init()
-    }
-
+struct StrokePreset: Codable, Identifiable {
     let width: CGFloat
-    let color: NSColor
-    let id: UUID
+    let color: SIMD4<Float>
+    let id = UUID()
+
+    enum CodingKeys: String, CodingKey {
+        case width
+        case color
+    }
+}
+
+struct PresetsContainer: Codable {
+    let stroke: [StrokePreset]
 }
 
 class Presets: NSObject, ObservableObject {
@@ -68,11 +54,11 @@ class Presets: NSObject, ObservableObject {
         guard hasChanged else {
             return
         }
-        let archiver = NSKeyedArchiver(requiringSecureCoding: true)
-        archiver.encode(strokePresets as NSArray, forKey: "stroke")
-        archiver.finishEncoding()
+        let presetsContainer = PresetsContainer(stroke: strokePresets)
+        let encoder = JSONEncoder()
         do {
-            try archiver.encodedData.write(to: Self.storageURL, options: .atomic)
+            let data = try encoder.encode(presetsContainer)
+            try data.write(to: Self.storageURL, options: .atomic)
         } catch let error {
             print("presets save error", error)
         }
@@ -81,16 +67,9 @@ class Presets: NSObject, ObservableObject {
     func load() {
         do {
             let data = try Data(contentsOf: Self.storageURL, options: [])
-            let unarchiver = try NSKeyedUnarchiver(forReadingFrom: data)
-            unarchiver.decodingFailurePolicy = .raiseException
-            defer {
-                unarchiver.finishDecoding()
-            }
-            let s = unarchiver.decodeObject(of: [NSArray.self, StrokePreset.self], forKey: "stroke")
-            guard let strokePresets = s as? NSArray as? [StrokePreset] else {
-                return
-            }
-            self.strokePresets = strokePresets
+            let decoder = JSONDecoder()
+            let presetsContainer = try decoder.decode(PresetsContainer.self, from: data)
+            self.strokePresets = presetsContainer.stroke
         } catch let error {
             print("presets load error", error)
         }

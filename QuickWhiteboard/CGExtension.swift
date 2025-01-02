@@ -38,15 +38,3 @@ extension CGSize {
         .init(width: CGFloat(floor(width * round_scale) / round_scale), height: CGFloat(floor(height * round_scale) / round_scale))
     }
 }
-
-extension CGColor {
-    var float4: SIMD4<Float> {
-        assert(self.colorSpace?.model == .rgb && self.numberOfComponents >= 3)
-        let components = self.components!
-        return .init(Float(components[0]), Float(components[1]), Float(components[2]), Float(self.numberOfComponents == 3 ? 1.0 : components[3]))
-    }
-
-    static func from(_ color: Color) -> CGColor {
-        NSColor(color).usingColorSpace(.sRGB)!.cgColor
-    }
-}

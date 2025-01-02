@@ -57,7 +57,7 @@ class FreehandTool: Tool {
     }
     
     func mouseDown(with event: NSEvent, location: CGPoint) {
-        let item = FreehandItem(strokeColor: .from(delegate.toolbarDataModel.strokeColor), strokeWidth: delegate.toolbarDataModel.strokeWidth)
+        let item = FreehandItem(strokeColor: delegate.toolbarDataModel.strokeColor, strokeWidth: delegate.toolbarDataModel.strokeWidth)
         item.addPointSample(location: location)
         _editingItem = item
         delegate.setNeedsDisplay()
@@ -93,7 +93,7 @@ class LineTool: Tool {
     }
 
     func mouseDown(with event: NSEvent, location: CGPoint) {
-        let item = LineItem(strokeColor: .from(delegate.toolbarDataModel.strokeColor), strokeWidth: delegate.toolbarDataModel.strokeWidth)
+        let item = LineItem(strokeColor: delegate.toolbarDataModel.strokeColor, strokeWidth: delegate.toolbarDataModel.strokeWidth)
         item.from = location.float2
         item.to = item.from
         _editingItem = item
@@ -132,7 +132,7 @@ class RectangleTool: Tool {
     }
 
     func mouseDown(with event: NSEvent, location: CGPoint) {
-        let item = RectangleItem(strokeColor: .from(delegate.toolbarDataModel.strokeColor), strokeWidth: delegate.toolbarDataModel.strokeWidth)
+        let item = RectangleItem(strokeColor: delegate.toolbarDataModel.strokeColor, strokeWidth: delegate.toolbarDataModel.strokeWidth)
         item.from = location.float2
         item.to = item.from
         _editingItem = item
@@ -171,7 +171,7 @@ class EllipseTool: Tool {
     }
     
     func mouseDown(with event: NSEvent, location: CGPoint) {
-        let item = EllipseItem(strokeColor: .from(delegate.toolbarDataModel.strokeColor), strokeWidth: delegate.toolbarDataModel.strokeWidth)
+        let item = EllipseItem(strokeColor: delegate.toolbarDataModel.strokeColor, strokeWidth: delegate.toolbarDataModel.strokeWidth)
         item.from = location.float2
         item.to = item.from
         _editingItem = item

@@ -144,8 +144,8 @@ class DrawingItem: RenderItem, CanMarkAsDirty, HasGeneration {
     @OnDemand(\DrawingItem.generateVertexBuffer)
     private var vertexBuffer: (any MTLBuffer)
 
-    init(strokeColor: CGColor, strokeWidth: CGFloat) {
-        self.strokeColor = strokeColor.float4
+    init(strokeColor: SIMD4<Float>, strokeWidth: CGFloat) {
+        self.strokeColor = strokeColor
         self.strokeWidth = Float(strokeWidth)
     }
 

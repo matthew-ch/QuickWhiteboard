@@ -51,7 +51,7 @@ class ViewController: NSViewController {
     private var isLeftMouseDown = false
     private var isRightMouseDown = false
 
-    let toolbarDataModel = ToolbarDataModel(strokeWidth: 2.0, strokeColor: .init(red: 1.0/255.0, green: 25.0/255.0, blue: 147.0/255.0))
+    let toolbarDataModel = ToolbarDataModel(strokeWidth: 2.0, strokeColor: .init(x: 0.0, y: 0.0, z: 0.0, w: 1.0))
 
     private var presetsChanging: AnyCancellable?
 
@@ -388,7 +388,7 @@ extension ViewController: ToolbarDelegate {
     }
 
     func addStrokePreset() {
-        presets.addStrokePreset(StrokePreset(width: toolbarDataModel.strokeWidth, color: NSColor(toolbarDataModel.strokeColor)))
+        presets.addStrokePreset(StrokePreset(width: toolbarDataModel.strokeWidth, color: toolbarDataModel.strokeColor))
     }
 
     func removeStrokePreset(preset: StrokePreset) {
