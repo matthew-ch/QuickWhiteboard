@@ -61,7 +61,7 @@ enum ToolIdentifier: Equatable, Hashable, Identifiable, CaseIterable {
         case .line:
             "\(localizedString("Draw line")) (\(shortcutKey))"
         case .rectangle:
-            "\(localizedString("Draw rectangle")) (\(shortcutKey)"
+            "\(localizedString("Draw rectangle")) (\(shortcutKey))"
         case .ellipse:
             "\(localizedString("Draw ellipse")) (\(shortcutKey))"
         case .eraser:
