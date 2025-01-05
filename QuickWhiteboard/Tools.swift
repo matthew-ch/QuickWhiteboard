@@ -276,16 +276,12 @@ class EraserTool: Tool {
             if renderItem.hidden || !renderItem.boundingRect.insetBy(dx: -eraserRadius, dy: -eraserRadius).contains(location) {
                 continue
             }
-            guard let drawingItem = renderItem as? DrawingItem, !drawingItem.points.isEmpty else {
+            guard let drawingItem = renderItem as? DrawingItem else {
                 continue
             }
-            var previousPoint = drawingItem.points[0]
             let distanceTest = drawingItem.strokeWidth / 2.0 + Float(eraserRadius)
-            for point in drawingItem.points {
-                if distanceFromPointToLineSegment(point: location.float2, segmentPoints: previousPoint.location, point.location) <= distanceTest {
-                    return renderItem
-                }
-                previousPoint = point
+            if drawingItem.distanceToPath(from: location) <= distanceTest {
+                return renderItem
             }
         }
         return nil

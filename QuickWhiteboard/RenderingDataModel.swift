@@ -133,6 +133,9 @@ class DrawingItem: RenderItem, CanMarkAsDirty, HasGeneration {
     var boundingRect: CGRect {
         CGRect(origin: .init(x: CGFloat.infinity, y: CGFloat.infinity), size: .zero)
     }
+    var isClosedPath: Bool {
+        false
+    }
 
     var hidden: Bool = false
 
@@ -199,8 +202,8 @@ class DrawingItem: RenderItem, CanMarkAsDirty, HasGeneration {
     func generateVertexes(points: [PointSample]) -> [SIMD2<Float>] {
         var result: [SIMD2<Float>] = []
         for i in 0..<points.count {
-            let previousPoint = i == 0 ? nil : points[i - 1]
-            let nextPoint = i + 1 < points.count ? points[i + 1] : nil
+            let previousPoint = i == 0 ? (isClosedPath ? points.last : nil) : points[i - 1]
+            let nextPoint = i + 1 < points.count ? points[i + 1] : (isClosedPath ? points.first : nil)
             result.append(contentsOf: generateTriangles(point: points[i], previousPoint: previousPoint, nextPoint: nextPoint))
         }
         return result
@@ -221,6 +224,17 @@ class DrawingItem: RenderItem, CanMarkAsDirty, HasGeneration {
     final func markAsDirty() {
         generation += 1
     }
+
+    func distanceToPath(from location: CGPoint) -> Float {
+        var previousPoint = isClosedPath ? points.last! : points[0]
+        var minDistance = Float.infinity
+        for point in points {
+            let d = distanceFromPointToLineSegment(point: location.float2, segmentPoints: previousPoint.location, point.location)
+            previousPoint = point
+            minDistance = min(minDistance, d)
+        }
+        return minDistance
+    }
 }
 
 final class FreehandItem: DrawingItem {
@@ -239,9 +253,7 @@ final class FreehandItem: DrawingItem {
     }
 
     private var resolvedBoundingRect: CGRect {
-        if points.isEmpty {
-            return CGRect(origin: .init(x: CGFloat.infinity, y: CGFloat.infinity), size: .zero)
-        }
+        assert(!points.isEmpty)
         var minxy = SIMD2<Float>(x: Float.infinity, y: Float.infinity)
         var maxxy = SIMD2<Float>(x: -Float.infinity, y: -Float.infinity)
         for point in points {
@@ -334,37 +346,20 @@ final class LineItem: DrawingItem {
 
 final class RectangleItem: DrawingItem {
 
+    @OnDemand(\RectangleItem.resolvedPoints)
+    private var _points: [PointSample]
     override var points: [PointSample] {
-        if from == to {
-            return [PointSample(location: from)]
-        } else {
-            let to = endPoint
-            let from: SIMD2<Float>
-            if isCenterMode {
-                from = self.from * 2.0 - to
-            } else {
-                from = self.from
-            }
-            if to.x == from.x || to.y == from.y {
-                return [
-                    PointSample(location: from),
-                    PointSample(location: to),
-                ]
-            }
-            return [
-                PointSample(location: from),
-                PointSample(location: .init(x: from.x, y: to.y)),
-                PointSample(location: to),
-                PointSample(location: .init(x: to.x, y: from.y)),
-                PointSample(location: from),
-            ]
-        }
+        _points
     }
 
     @OnDemand(\RectangleItem.resolvedBoundingRect)
     private var _boundingRect: CGRect
     override var boundingRect: CGRect {
         _boundingRect
+    }
+
+    override var isClosedPath: Bool {
+        return _points.count == 4
     }
 
     @OnDemand(\RectangleItem.resolvedEndPoint)
@@ -403,6 +398,32 @@ final class RectangleItem: DrawingItem {
         }
         return to
     }
+
+    private var resolvedPoints: [PointSample] {
+        if from == to {
+            return [PointSample(location: from)]
+        } else {
+            let to = endPoint
+            let from: SIMD2<Float>
+            if isCenterMode {
+                from = self.from * 2.0 - to
+            } else {
+                from = self.from
+            }
+            if to.x == from.x || to.y == from.y {
+                return [
+                    PointSample(location: from),
+                    PointSample(location: to),
+                ]
+            }
+            return [
+                PointSample(location: from),
+                PointSample(location: .init(x: from.x, y: to.y)),
+                PointSample(location: to),
+                PointSample(location: .init(x: to.x, y: from.y)),
+            ]
+        }
+    }
 }
 
 final class EllipseItem: DrawingItem {
@@ -417,6 +438,10 @@ final class EllipseItem: DrawingItem {
     private var _boundingRect: CGRect
     override var boundingRect: CGRect {
         _boundingRect
+    }
+
+    override var isClosedPath: Bool {
+        return _points.count > 2
     }
 
     @DirtyMarking
@@ -474,21 +499,30 @@ final class EllipseItem: DrawingItem {
                 PointSample(location: origin + .init(x: rx, y: ry))
             ]
         }
-        let pointCount = max((Int(ceilf(Float.pi * max(rx, ry) / 2.0)) >> 3) << 3, 8)
-        var points = divideUnitCircle(count: pointCount)
-        let rxSqr = rx * rx
-        let rySqr = ry * ry
-        let t = rxSqr * rySqr
-        for i in 0..<pointCount {
-            let costheta = points[i].x
-            let sintheta = points[i].y
-            let r = sqrtf(t / (rySqr * costheta * costheta + rxSqr * sintheta * sintheta))
-            points[i] = points[i] * r + origin
+        var points: [SIMD2<Float>] = []
+        var theta: Float = 0.0
+        let rxsqr = rx * rx
+        let rysqr = ry * ry
+        let pi_2 = Float.pi / 2.0
+        while theta < pi_2 {
+            let ct = cos(theta)
+            let st = sin(theta)
+            points.append(.init(x: rx * ct, y: ry * st))
+            let d = sqrtf(rxsqr * st * st + rysqr * ct * ct)
+            theta += min(4.0 / d, pi_2 / 16.0)
         }
-        points.append(points[0])
-        return points.map({ p in
-            PointSample(location: p)
-        })
+        points.append(.init(x: 0.0, y: ry))
+        for i in (0..<points.count - 1).reversed() {
+            var p = points[i]
+            p.x = -p.x
+            points.append(p)
+        }
+        for i in (1..<points.count - 1).reversed() {
+            var p = points[i]
+            p.y = -p.y
+            points.append(p)
+        }
+        return points.map { PointSample(location: $0 + origin) }
     }
 }
 

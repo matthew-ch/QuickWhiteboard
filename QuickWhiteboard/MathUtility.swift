@@ -38,7 +38,11 @@ func distanceFromPointToLineSegment(point: SIMD2<Float>, segmentPoints p1: SIMD2
     return u2Length * sinValue
 }
 
+nonisolated(unsafe) private var cachedDivideResult = [Int: [SIMD2<Float>]]()
 func divideUnitCircle(count: Int) -> [SIMD2<Float>] {
+    if let cached = cachedDivideResult[count] {
+        return cached
+    }
     let sectorAngle = Float.pi * 2.0 / Float(count)
     let angles = (0..<count).map({ sectorAngle * Float($0) })
     var cosValues = Array<Float>(repeating: 0.0, count: count)
@@ -49,5 +53,6 @@ func divideUnitCircle(count: Int) -> [SIMD2<Float>] {
     for i in 0..<count {
         points.append(.init(x: cosValues[i], y: sinValues[i]))
     }
+    cachedDivideResult[count] = points
     return points
 }
