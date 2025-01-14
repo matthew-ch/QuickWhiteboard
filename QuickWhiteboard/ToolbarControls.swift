@@ -9,7 +9,7 @@ import SwiftUI
 
 extension Color {
     static func from(simd4: SIMD4<Float>) -> Self {
-        .init(red: Double(simd4.x), green: Double(simd4.y), blue: Double(simd4.z))
+        .init(red: Double(simd4.x), green: Double(simd4.y), blue: Double(simd4.z), opacity: Double(simd4.w))
     }
 }
 
@@ -26,6 +26,7 @@ private let presetColors: [SIMD4<Float>] = [
     .init(x: 0.25, y: 0.25, z: 0.25, w: 1.0),
     .init(x: 0.5, y: 0.5, z: 0.5, w: 1.0),
     .init(x: 0.75, y: 0.75, z: 0.75, w: 1.0),
+    .init(x: 1.0, y: 1.0, z: 1.0, w: 1.0),
 ]
 
 @MainActor
@@ -84,6 +85,7 @@ struct StrokeWidthEditor: View {
                     ForEach(Self.presetStrokeWidth, id: \.self) { i in
                         Button {
                             width = CGFloat(i)
+                            isShowingPopover = false
                         } label: {
                             Text("\(i)")
                         }
@@ -105,9 +107,16 @@ struct ColorCircle: View {
     let color: SIMD4<Float>
 
     var body: some View {
-        Circle()
-            .fill(Color.from(simd4: color))
-            .frame(width: 16.0, height: 16.0)
+        if color.w != 1.0 {
+            Circle()
+                .fill(makeGradient(color: color, varying: \.w))
+                .frame(width: 16.0, height: 16.0)
+                .clipShape(Circle())
+        } else {
+            Circle()
+                .fill(Color.from(simd4: opaqueColor(color)))
+                .frame(width: 16.0, height: 16.0)
+        }
     }
 }
 
@@ -117,6 +126,12 @@ private func makeGradient<VaryingKeyPath: WritableKeyPath<SIMD4<Float>, Float>>(
     var end = color
     end[keyPath: keyPath] = 1.0
     return LinearGradient(colors: [Color.from(simd4: start), Color.from(simd4: end)], startPoint: .init(x: 0, y: 0.5), endPoint: .init(x: 1.0, y: 0.5))
+}
+
+private func opaqueColor(_ color: SIMD4<Float>) -> SIMD4<Float> {
+    var color = color
+    color.w = 1.0
+    return color
 }
 
 struct StrokeColorEditor: View {
@@ -150,17 +165,25 @@ struct StrokeColorEditor: View {
 
                 VStack {
                     CustomSlider(value: $color.x) {
-                        makeGradient(color: color, varying: \.x)
+                        makeGradient(color: opaqueColor(color), varying: \.x)
                     }
                     .frame(height: 24.0)
                     CustomSlider(value: $color.y) {
-                        makeGradient(color: color, varying: \.y)
+                        makeGradient(color: opaqueColor(color), varying: \.y)
                     }
                     .frame(height: 24.0)
                     CustomSlider(value: $color.z) {
-                        makeGradient(color: color, varying: \.z)
+                        makeGradient(color: opaqueColor(color), varying: \.z)
                     }
                     .frame(height: 24.0)
+                    CustomSlider(value: $color.w) {
+                        makeGradient(color: color, varying: \.w)
+                    }
+                    .frame(height: 24.0)
+                    .background(
+                        Checkerboard(cellLength: 8.0)
+                            .clipShape(RoundedRectangle(cornerRadius: 2.0))
+                    )
                 }
                 .frame(width: 256.0)
                 .padding(.horizontal, 8.0)
@@ -188,6 +211,7 @@ struct StrokePresetsMenu: View {
             VStack(spacing: 4.0) {
                 Button {
                     delegate?.addStrokePreset()
+                    isShowingPopover = false
                 } label: {
                     HStack(alignment: .center, spacing: 2.0) {
                         Text("\(Int(dataModel.strokeWidth))")
@@ -208,6 +232,7 @@ struct StrokePresetsMenu: View {
                     Button {
                         dataModel.strokeWidth = stroke.width
                         dataModel.strokeColor = stroke.color
+                        isShowingPopover = false
                     } label: {
                         HStack(alignment: .center, spacing: 2.0) {
                             Text("\(Int(stroke.width))")
