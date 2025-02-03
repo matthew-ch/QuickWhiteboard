@@ -123,6 +123,12 @@ CA
                                 <modifierMask key="keyEquivalentModifierMask"/>
                                 <menu key="submenu" title="View" id="HyV-fh-RgO">
                                     <items>
+                                        <menuItem title="Grid" keyEquivalent="g" id="FoB-cV-pQu">
+                                            <connections>
+                                                <action selector="toggleGrid:" target="Ady-hI-5gd" id="JvT-jk-hBo"/>
+                                            </connections>
+                                        </menuItem>
+                                        <menuItem isSeparatorItem="YES" id="XjM-yx-yzn"/>
                                         <menuItem title="Enter Full Screen" keyEquivalent="f" id="4J7-dP-txa">
                                             <modifierMask key="keyEquivalentModifierMask" control="YES" command="YES"/>
                                             <connections>

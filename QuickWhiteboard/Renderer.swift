@@ -137,40 +137,48 @@ final class Renderer {
             if item.hidden || !viewport.intersects(item.boundingRect) {
                 continue
             }
-            var depth = Float(i + 1) / total
-            encoder.setVertexBytes(&depth, length: MemoryLayout<Float>.size, index: Int(BufferIndexDepth.rawValue))
-            if let drawing = item as? DrawingItem {
-                if drawing.strokeColor.w != 1.0 {
-                    alphaItems.append((depth, item))
-                    continue
-                }
-                let (vertexBuffer, vertexCount) = drawing.upload(to: device)
-                encoder.setVertexBuffer(vertexBuffer, offset: 0, index: Int(BufferIndexVertexArray.rawValue))
-                var color = drawing.strokeColor
-                encoder.setFragmentBytes(&color, length: MemoryLayout<SIMD4<Float>>.size, index: Int(BufferIndexColor.rawValue))
-                encoder.drawPrimitives(type: .triangle, vertexStart: 0, vertexCount: vertexCount)
+            let depth = Float(i + 1) / total
+            if item.isOpaque {
+                renderItem(item, at: depth, with: encoder)
             } else {
                 alphaItems.append((depth, item))
             }
         }
         for (depth, item) in alphaItems.reversed() {
-            var depth = depth
-            encoder.setVertexBytes(&depth, length: MemoryLayout<Float>.size, index: Int(BufferIndexDepth.rawValue))
-            if let drawing = item as? DrawingItem {
-                encoder.setRenderPipelineState(alphaPipelineState)
-                let (vertexBuffer, vertexCount) = drawing.upload(to: device)
-                encoder.setVertexBuffer(vertexBuffer, offset: 0, index: Int(BufferIndexVertexArray.rawValue))
-                var color = drawing.strokeColor
-                encoder.setFragmentBytes(&color, length: MemoryLayout<SIMD4<Float>>.size, index: Int(BufferIndexColor.rawValue))
-                encoder.drawPrimitives(type: .triangle, vertexStart: 0, vertexCount: vertexCount)
-            } else if let image = item as? ImageItem {
-                encoder.setRenderPipelineState(texturePipelineState)
-                let (texture, vertexBuffer, uvBuffer, vertexCount) = image.upload(to: device)
-                encoder.setVertexBuffer(vertexBuffer, offset: 0, index: Int(BufferIndexVertexArray.rawValue))
-                encoder.setVertexBuffer(uvBuffer, offset: 0, index: Int(BufferIndexUVArray.rawValue))
-                encoder.setFragmentTexture(texture, index: Int(TextureIndexDefault.rawValue))
-                encoder.drawPrimitives(type: .triangle, vertexStart: 0, vertexCount: vertexCount)
-            }
+            renderItem(item, at: depth, with: encoder)
+        }
+    }
+
+    private func renderItem(_ item: any RenderItem, at depth: Float, with encoder: any MTLRenderCommandEncoder) {
+        var depth = depth
+        encoder.setVertexBytes(&depth, length: MemoryLayout<Float>.size, index: Int(BufferIndexDepth.rawValue))
+        switch item {
+        case let drawing as DrawingItem:
+            encoder.setRenderPipelineState(drawing.isOpaque ? simplePipelineState : alphaPipelineState)
+            let (vertexBuffer, vertexCount) = drawing.upload(to: device)
+            encoder.setVertexBuffer(vertexBuffer, offset: 0, index: Int(BufferIndexVertexArray.rawValue))
+            var color = drawing.strokeColor
+            encoder.setFragmentBytes(&color, length: MemoryLayout<SIMD4<Float>>.size, index: Int(BufferIndexColor.rawValue))
+            encoder.drawPrimitives(type: .triangle, vertexStart: 0, vertexCount: vertexCount)
+
+        case let image as ImageItem:
+            encoder.setRenderPipelineState(texturePipelineState)
+            let (texture, vertexBuffer, uvBuffer, vertexCount) = image.upload(to: device)
+            encoder.setVertexBuffer(vertexBuffer, offset: 0, index: Int(BufferIndexVertexArray.rawValue))
+            encoder.setVertexBuffer(uvBuffer, offset: 0, index: Int(BufferIndexUVArray.rawValue))
+            encoder.setFragmentTexture(texture, index: Int(TextureIndexDefault.rawValue))
+            encoder.drawPrimitives(type: .triangle, vertexStart: 0, vertexCount: vertexCount)
+
+        case let grid as GridItem:
+            encoder.setRenderPipelineState(simplePipelineState)
+            let (vertexBuffer, vertexCount) = grid.upload(to: device)
+            encoder.setVertexBuffer(vertexBuffer, offset: 0, index: Int(BufferIndexVertexArray.rawValue))
+            var color = grid.color
+            encoder.setFragmentBytes(&color, length: MemoryLayout<SIMD4<Float>>.size, index: Int(BufferIndexColor.rawValue))
+            encoder.drawPrimitives(type: .line, vertexStart: 0, vertexCount: vertexCount)
+
+        default:
+            print("did not render item", item)
         }
     }
 }

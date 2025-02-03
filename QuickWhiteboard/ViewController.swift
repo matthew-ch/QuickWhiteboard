@@ -19,7 +19,10 @@ class ViewController: NSViewController {
     private var items: [any RenderItem] = []
     private var renderer: Renderer!
     private var origin: CGPoint = .zero
-    
+
+    private var isShowingGrid = false
+    private var gridItem = GridItem(boundingRect: .zero)
+
     private lazy var freehandTool = FreehandTool(delegate: self)
     private lazy var lineTool = LineTool(delegate: self)
     private lazy var rectangleTool = RectangleTool(delegate: self)
@@ -257,6 +260,11 @@ class ViewController: NSViewController {
         setNeedsDisplay()
     }
 
+    @IBAction func toggleGrid(_ sender: Any) {
+        isShowingGrid.toggle()
+        setNeedsDisplay()
+    }
+
     @objc func restoreClearedItems(_ removedItems: Any) {
         items = removedItems as! NSArray as! Array<any RenderItem>
         undoManager?.registerUndo(withTarget: self, selector: #selector(clear(_:)), object: nil)
@@ -439,6 +447,9 @@ extension ViewController: NSMenuItemValidation {
         if menuItem.action == #selector(clear(_:)) {
             return !isEditing && !items.isEmpty
         }
+        if menuItem.action == #selector(toggleGrid(_:)) {
+            menuItem.state = isShowingGrid ? .on : .off
+        }
         return true
     }
 }
@@ -487,9 +498,17 @@ extension ViewController: MTKViewDelegate {
     }
     
     func draw(in view: MTKView) {
-        let renderItems = items + ((activeTool.editingItem as? RenderItem).map{ [$0] } ?? [])
-        renderer.render(in: view, items: renderItems, viewport: CGRect(origin: origin, size: canvasView.bounds.size), debug: debug)
+        let viewport = CGRect(origin: origin, size: canvasView.bounds.size)
+        var renderItems: [any RenderItem] = []
+        if isShowingGrid {
+            gridItem.boundingRect = viewport
+            renderItems.append(gridItem)
+        }
+        renderItems.append(contentsOf: items)
+        if let activeItem = activeTool.editingItem as? RenderItem {
+            renderItems.append(activeItem)
+        }
+        renderer.render(in: view, items: renderItems, viewport: viewport, debug: debug)
     }
-    
     
 }

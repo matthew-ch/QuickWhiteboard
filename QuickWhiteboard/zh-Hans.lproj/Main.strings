@@ -35,6 +35,9 @@
 /* Class = "NSMenu"; title = "Help"; ObjectID = "F2S-fz-NVQ"; */
 "F2S-fz-NVQ.title" = "帮助";
 
+/* Class = "NSMenuItem"; title = "Grid"; ObjectID = "FoB-cV-pQu"; */
+"FoB-cV-pQu.title" = "网格";
+
 /* Class = "NSMenuItem"; title = "QuickWhiteboard Help"; ObjectID = "FKE-Sm-Kum"; */
 "FKE-Sm-Kum.title" = "QuickWhiteboard 帮助";
 

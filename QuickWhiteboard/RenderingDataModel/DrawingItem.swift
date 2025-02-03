@@ -1,128 +1,16 @@
 //
-//  Model.swift
+//  DrawingItem.swift
 //  QuickWhiteboard
 //
-//  Created by Matthew.J on 2024/4/25.
+//  Created by Matthew.J on 2025/2/3.
 //
 
 import Foundation
-import CoreGraphics
 import Metal
-import MetalKit
 import simd
-
-@MainActor
-protocol RenderItem: AnyObject, ToolEditingItem {
-    var boundingRect: CGRect { get }
-    var hidden: Bool { get set }
-}
 
 struct PointSample {
     let location: SIMD2<Float>
-}
-
-final class ErasedItems: ToolEditingItem {
-    var selected: [any RenderItem] = []
-    
-    func erase() {
-        for item in selected {
-            item.hidden = true
-        }
-    }
-    
-    func restore() {
-        for item in selected {
-            item.hidden = false
-        }
-    }
-}
-
-@MainActor
-protocol CanMarkAsDirty: AnyObject {
-    func markAsDirty() -> Void
-}
-
-@propertyWrapper
-@MainActor
-struct DirtyMarking<Value> {
-
-    @available(*, unavailable)
-    var wrappedValue: Value {
-        get { fatalError("only works on instance properties of classes") }
-        set { fatalError("only works on instance properties of classes") }
-    }
-
-    private var stored: Value
-
-    init(wrappedValue: Value) {
-        self.stored = wrappedValue
-    }
-
-    static subscript<EnclosingType: CanMarkAsDirty>(
-        _enclosingInstance instance: EnclosingType,
-        wrapped wrappedKeyPath: ReferenceWritableKeyPath<EnclosingType, Value>,
-        storage storageKeyPath: ReferenceWritableKeyPath<EnclosingType, Self>
-    ) -> Value {
-        get {
-            instance[keyPath: storageKeyPath].stored
-        }
-        set {
-            instance[keyPath: storageKeyPath].stored = newValue
-            instance.markAsDirty()
-        }
-    }
-}
-
-@MainActor
-protocol HasGeneration: AnyObject {
-    var generation: Int { get }
-}
-
-@propertyWrapper
-@MainActor
-struct OnDemand<EnclosingType: HasGeneration, Value> {
-
-    @available(*, unavailable)
-    var wrappedValue: Value {
-        get { fatalError("only works on instance properties of classes") }
-        set { fatalError("only works on instance properties of classes") }
-    }
-
-    static subscript(
-        _enclosingInstance instance: EnclosingType,
-        wrapped wrappedKeyPath: ReferenceWritableKeyPath<EnclosingType, Value>,
-        storage storageKeyPath: ReferenceWritableKeyPath<EnclosingType, Self>
-    ) -> Value {
-        get {
-            let builderKeyPath = instance[keyPath: storageKeyPath].builderKeyPath
-            return instance[keyPath: storageKeyPath].updatedIfNeeded(generation: instance.generation) {
-                instance[keyPath: builderKeyPath]
-            }
-        }
-        set {
-            fatalError("no setter supported")
-        }
-    }
-
-    typealias BuilderKeyPath = KeyPath<EnclosingType, Value>
-
-    private let builderKeyPath: BuilderKeyPath
-    private let once: Bool
-    private var cachedValue: Optional<Value> = nil
-    private var generation = 0
-
-    init(_ arg: BuilderKeyPath, once: Bool = false) {
-        self.builderKeyPath = arg
-        self.once = once
-    }
-
-    private mutating func updatedIfNeeded(generation: Int, valueFn: () -> Value) -> Value {
-        if cachedValue == nil || !once && self.generation < generation {
-            cachedValue = valueFn()
-            self.generation = generation
-        }
-        return cachedValue!
-    }
 }
 
 class DrawingItem: RenderItem, CanMarkAsDirty, HasGeneration {
@@ -138,6 +26,10 @@ class DrawingItem: RenderItem, CanMarkAsDirty, HasGeneration {
     }
 
     var hidden: Bool = false
+
+    var isOpaque: Bool {
+        strokeColor.w == 1.0
+    }
 
     let strokeColor: SIMD4<Float>
     let strokeWidth: Float
@@ -523,107 +415,5 @@ final class EllipseItem: DrawingItem {
             points.append(p)
         }
         return points.map { PointSample(location: $0 + origin) }
-    }
-}
-
-final class ImageItem: RenderItem, CanMarkAsDirty, HasGeneration {
-    private(set) var image: CGImage
-
-    @DirtyMarking
-    var center: SIMD2<Float>
-    let size: SIMD2<Float>
-
-    @DirtyMarking
-    var scale: Float = 1.0
-
-    @DirtyMarking
-    var rotation: Float = 0.0
-
-    @OnDemand(\ImageItem.resolvedBoundingRect)
-    private var _boundingRect: CGRect
-    var boundingRect: CGRect {
-        _boundingRect
-    }
-
-    var hidden: Bool = false
-
-    private var device: (any MTLDevice)?
-
-    @OnDemand(\ImageItem.resolvedTexture, once: true)
-    private var texture: (any MTLTexture)
-
-    @OnDemand(\ImageItem.resolvedVertexBuffer)
-    private var vertexBuffer: (any MTLBuffer)
-
-    @OnDemand(\ImageItem.resolvedUVBuffer, once: true)
-    private var uvBuffer: (any MTLBuffer)
-    
-    static var textureLoader: MTKTextureLoader!
-    static let uvs: [SIMD2<Float>] = [
-        .init(0.0, 1.0),
-        .init(1.0, 0.0),
-        .init(0.0, 0.0),
-        .init(1.0, 0.0),
-        .init(0.0, 1.0),
-        .init(1.0, 1.0),
-    ]
-
-    private(set) var generation: Int = 1
-
-    func markAsDirty() {
-        generation += 1
-    }
-
-    init(image: CGImage, center: SIMD2<Float>, size: SIMD2<Float>) {
-        self.image = image
-        self.center = center
-        self.size = size
-    }
-
-    private var resolvedTexture: any MTLTexture {
-        try! Self.textureLoader.newTexture(cgImage: image, options: [
-            .allocateMipmaps: NSNumber(booleanLiteral: false),
-            .textureStorageMode: NSNumber(value: MTLStorageMode.private.rawValue),
-            .textureUsage: NSNumber(value: MTLTextureUsage.shaderRead.rawValue),
-            .SRGB: NSNumber(booleanLiteral: false),
-        ])
-    }
-
-    private var resolvedVertexBuffer: any MTLBuffer {
-        let matrix = matrix2DRotateAndScale(radian: rotation, scale: scale)
-        let p1 = simd_mul(matrix, size * 0.5)
-        let p2 = simd_mul(matrix, size * SIMD2(0.5, -0.5))
-
-        let vertexes: [SIMD2<Float>] = [
-            center - p1,
-            center + p1,
-            center - p2,
-            center + p1,
-            center - p1,
-            center + p2,
-        ]
-        return device!.makeBuffer(bytes: vertexes, length: MemoryLayout<SIMD2<Float>>.size * 6)!
-    }
-
-    private var resolvedUVBuffer: any MTLBuffer {
-        device!.makeBuffer(bytes: Self.uvs, length: MemoryLayout<SIMD2<Float>>.size * 6)!
-    }
-
-    private var resolvedBoundingRect: CGRect {
-        let matrix = matrix2DRotateAndScale(radian: rotation, scale: scale)
-        let p1 = simd_mul(matrix, size * 0.5)
-        let p2 = simd_mul(matrix, size * SIMD2(0.5, -0.5))
-        let dx = max(abs(p1.x), abs(p2.x))
-        let dy = max(abs(p1.y), abs(p2.y))
-        let half_size = SIMD2(dx, dy)
-        return .init(origin: .from(center - half_size), size: .from(half_size * 2.0))
-    }
-
-    func upload(to device: MTLDevice) -> (texture: any MTLTexture, vertexBuffer: any MTLBuffer, uvBuffer: any MTLBuffer, vertexCount: Int) {
-        if Self.textureLoader == nil {
-            Self.textureLoader = MTKTextureLoader(device: device)
-        }
-        self.device = device
-        return (texture, vertexBuffer, uvBuffer, 6)
     }
 }
