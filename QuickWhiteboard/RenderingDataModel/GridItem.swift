@@ -12,7 +12,16 @@ private let gridSpacing = 20.0
 
 final class GridItem: RenderItem {
 
-    var boundingRect: CGRect
+    var globalPosition: CGPoint {
+        get {
+            .zero
+        }
+        set {
+            fatalError("does not support setting position")
+        }
+    }
+
+    var localBoundingRect: CGRect
     
     var hidden: Bool = false
 
@@ -25,18 +34,18 @@ final class GridItem: RenderItem {
     private var vertexBuffer: (any MTLBuffer)?
 
     init(boundingRect: CGRect) {
-        self.boundingRect = boundingRect
+        self.localBoundingRect = boundingRect
     }
 
     func upload(to device: MTLDevice) -> (vetexBuffer: any MTLBuffer, vertexCount: Int) {
-        let vLineCount = Int(boundingRect.width / gridSpacing) + 1
-        let hLineCount = Int(boundingRect.height / gridSpacing) + 1
-        let vLineStartX = Float(ceil(boundingRect.minX / gridSpacing) * gridSpacing)
-        let vLineBottomY = Float(boundingRect.minY)
-        let vLineTopY = Float(boundingRect.maxY)
-        let hLineStartY = Float(ceil(boundingRect.minY / gridSpacing) * gridSpacing)
-        let hLineLeftX = Float(boundingRect.minX)
-        let hLineRightX = Float(boundingRect.maxX)
+        let vLineCount = Int(localBoundingRect.width / gridSpacing) + 1
+        let hLineCount = Int(localBoundingRect.height / gridSpacing) + 1
+        let vLineStartX = Float(ceil(localBoundingRect.minX / gridSpacing) * gridSpacing)
+        let vLineBottomY = Float(localBoundingRect.minY)
+        let vLineTopY = Float(localBoundingRect.maxY)
+        let hLineStartY = Float(ceil(localBoundingRect.minY / gridSpacing) * gridSpacing)
+        let hLineLeftX = Float(localBoundingRect.minX)
+        let hLineRightX = Float(localBoundingRect.maxX)
         let vertexCount = (vLineCount + hLineCount) * 2
         let size = vertexCount * MemoryLayout<SIMD2<Float>>.size
         if vertexBuffer == nil || vertexBuffer!.length < size {

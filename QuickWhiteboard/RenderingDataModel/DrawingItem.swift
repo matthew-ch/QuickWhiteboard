@@ -15,10 +15,12 @@ struct PointSample {
 
 class DrawingItem: RenderItem, CanMarkAsDirty, HasGeneration {
 
+    var globalPosition: CGPoint = .zero
+
     var points: [PointSample] {
         []
     }
-    var boundingRect: CGRect {
+    var localBoundingRect: CGRect {
         CGRect(origin: .init(x: CGFloat.infinity, y: CGFloat.infinity), size: .zero)
     }
     var isClosedPath: Bool {
@@ -117,11 +119,12 @@ class DrawingItem: RenderItem, CanMarkAsDirty, HasGeneration {
         generation += 1
     }
 
-    func distanceToPath(from location: CGPoint) -> Float {
+    func distanceToPath(from globalLocation: CGPoint) -> Float {
+        let location = globalLocation.float2 - globalPosition.float2
         var previousPoint = isClosedPath ? points.last! : points[0]
         var minDistance = Float.infinity
         for point in points {
-            let d = distanceFromPointToLineSegment(point: location.float2, segmentPoints: previousPoint.location, point.location)
+            let d = distanceFromPointToLineSegment(point: location, segmentPoints: previousPoint.location, point.location)
             previousPoint = point
             minDistance = min(minDistance, d)
         }
@@ -140,7 +143,7 @@ final class FreehandItem: DrawingItem {
 
     @OnDemand(\FreehandItem.resolvedBoundingRect)
     private var _boundingRect: CGRect
-    override var boundingRect: CGRect {
+    override var localBoundingRect: CGRect {
         _boundingRect
     }
 
@@ -186,7 +189,7 @@ final class LineItem: DrawingItem {
 
     @OnDemand(\LineItem.resolvedBoundingRect)
     private var _boundingRect: CGRect
-    override var boundingRect: CGRect {
+    override var localBoundingRect: CGRect {
         _boundingRect
     }
 
@@ -246,7 +249,7 @@ final class RectangleItem: DrawingItem {
 
     @OnDemand(\RectangleItem.resolvedBoundingRect)
     private var _boundingRect: CGRect
-    override var boundingRect: CGRect {
+    override var localBoundingRect: CGRect {
         _boundingRect
     }
 
@@ -328,7 +331,7 @@ final class EllipseItem: DrawingItem {
 
     @OnDemand(\EllipseItem.resolvedBoundingRect)
     private var _boundingRect: CGRect
-    override var boundingRect: CGRect {
+    override var localBoundingRect: CGRect {
         _boundingRect
     }
 
@@ -384,11 +387,11 @@ final class EllipseItem: DrawingItem {
         if from == to {
             return [PointSample(location: from)]
         }
-        let (origin, rx, ry) = calcCenterRxRy()
+        let (center, rx, ry) = calcCenterRxRy()
         if rx == 0.0 || ry == 0.0 {
             return [
-                PointSample(location: origin - .init(x: rx, y: ry)),
-                PointSample(location: origin + .init(x: rx, y: ry))
+                PointSample(location: center - .init(x: rx, y: ry)),
+                PointSample(location: center + .init(x: rx, y: ry))
             ]
         }
         var points: [SIMD2<Float>] = []
@@ -414,6 +417,6 @@ final class EllipseItem: DrawingItem {
             p.y = -p.y
             points.append(p)
         }
-        return points.map { PointSample(location: $0 + origin) }
+        return points.map { PointSample(location: $0 + center) }
     }
 }

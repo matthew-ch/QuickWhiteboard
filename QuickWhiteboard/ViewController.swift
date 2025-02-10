@@ -23,12 +23,12 @@ class ViewController: NSViewController {
     private var isShowingGrid = false
     private var gridItem = GridItem(boundingRect: .zero)
 
-    private lazy var freehandTool = FreehandTool(delegate: self)
-    private lazy var lineTool = LineTool(delegate: self)
-    private lazy var rectangleTool = RectangleTool(delegate: self)
-    private lazy var ellipseTool = EllipseTool(delegate: self)
-    private lazy var eraserTool = EraserTool(delegate: self)
-    private lazy var imageTool = ImageTool(delegate: self)
+    private lazy var freehandTool = FreehandTool()
+    private lazy var lineTool = LineTool()
+    private lazy var rectangleTool = RectangleTool()
+    private lazy var ellipseTool = EllipseTool()
+    private lazy var eraserTool = EraserTool()
+    private lazy var imageTool = ImageTool()
 
     private var activeTool: any Tool {
         switch toolbarDataModel.activeToolIdentifier {
@@ -199,18 +199,24 @@ class ViewController: NSViewController {
             return
         }
         isLeftMouseDown = true
-        activeTool.mouseDown(with: event, location: convertEventLocation(event.locationInWindow))
+        activeTool.mouseDown(with: event,
+                             location: convertEventLocation(event.locationInWindow),
+                             host: self)
     }
 
     func canvasViewMouseDragged(with event: NSEvent) {
         if isLeftMouseDown {
-            activeTool.mouseDragged(with: event, location: convertEventLocation(event.locationInWindow))
+            activeTool.mouseDragged(with: event,
+                                    location: convertEventLocation(event.locationInWindow),
+                                    host: self)
         }
     }
 
     func canvasViewMouseUp(with event: NSEvent) {
         if isLeftMouseDown {
-            activeTool.mouseUp(with: event, location: convertEventLocation(event.locationInWindow))
+            activeTool.mouseUp(with: event,
+                               location: convertEventLocation(event.locationInWindow),
+                               host: self)
         }
         isLeftMouseDown = false
     }
@@ -311,8 +317,8 @@ class ViewController: NSViewController {
         var rect = CGRect(origin: .zero, size: .init(width: size.width * scale, height: size.height * scale))
         if let cgImage = image.cgImage(forProposedRect: &rect, context: NSGraphicsContext(cgContext: cgContext, flipped: false), hints: nil) {
             let imageCenter = CGPoint(x: origin.x + canvasView.bounds.midX, y: origin.y + canvasView.bounds.midY).rounded
-            let imageItem = ImageItem(image: cgImage, center: imageCenter.float2, size: size.float2)
-            imageTool.setImageItem(item: imageItem)
+            let imageItem = ImageItem(image: cgImage, position: imageCenter, size: size.float2)
+            imageTool.setImageItem(item: imageItem, host: self)
             toolbarDataModel.activeToolIdentifier = .image
         }
     }
@@ -349,7 +355,7 @@ class ViewController: NSViewController {
 }
 
 // MARK: ToolDelegate
-extension ViewController: ToolDelegate {
+extension ViewController: ToolHost {
     var renderItems: [any RenderItem] {
         items
     }
@@ -390,9 +396,9 @@ extension ViewController: ToolbarDelegate {
         let image = renderImage()
         NSSharingServicePicker(items: [image]).show(relativeTo: .zero, of: sender, preferredEdge: .minY)
     }
-    
-    func commitImageItemProperty() {
-        imageTool.commit()
+
+    func commitActiveTool() {
+        activeTool.commit(to: self)
     }
 
     func addStrokePreset() {
@@ -501,7 +507,7 @@ extension ViewController: MTKViewDelegate {
         let viewport = CGRect(origin: origin, size: canvasView.bounds.size)
         var renderItems: [any RenderItem] = []
         if isShowingGrid {
-            gridItem.boundingRect = viewport
+            gridItem.localBoundingRect = viewport
             renderItems.append(gridItem)
         }
         renderItems.append(contentsOf: items)

@@ -10,6 +10,7 @@
 
 typedef enum BufferIndices {
     BufferIndexViewport,
+    BufferIndexOffset,
     BufferIndexVertexArray,
     BufferIndexUVArray,
     BufferIndexDepth,

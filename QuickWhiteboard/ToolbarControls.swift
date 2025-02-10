@@ -33,10 +33,10 @@ private let presetColors: [SIMD4<Float>] = [
 protocol ToolbarDelegate: AnyObject {
     func toggleDebug() -> Void
     func exportCanvas(_ sender: NSButton) -> Void
-    func commitImageItemProperty() -> Void
     func addStrokePreset() -> Void
     func removeStrokePreset(preset: StrokePreset) -> Void
     func onClickTool(identifier: ToolIdentifier) -> Void
+    func commitActiveTool() -> Void
 }
 
 struct ExportButton: NSViewRepresentable {
@@ -350,7 +350,7 @@ struct ImageEditToolbar: View {
             Spacer()
             
             Button(action: {
-                delegate?.commitImageItemProperty()
+                delegate?.commitActiveTool()
             }, label: {
                 Text("Done")
             })

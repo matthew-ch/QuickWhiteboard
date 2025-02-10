@@ -13,9 +13,7 @@ import simd
 
 final class ImageItem: RenderItem, CanMarkAsDirty, HasGeneration {
     private(set) var image: CGImage
-
-    @DirtyMarking
-    var center: SIMD2<Float>
+    var globalPosition: CGPoint = .zero
     let size: SIMD2<Float>
 
     @DirtyMarking
@@ -26,7 +24,7 @@ final class ImageItem: RenderItem, CanMarkAsDirty, HasGeneration {
 
     @OnDemand(\ImageItem.resolvedBoundingRect)
     private var _boundingRect: CGRect
-    var boundingRect: CGRect {
+    var localBoundingRect: CGRect {
         _boundingRect
     }
 
@@ -63,9 +61,9 @@ final class ImageItem: RenderItem, CanMarkAsDirty, HasGeneration {
         generation += 1
     }
 
-    init(image: CGImage, center: SIMD2<Float>, size: SIMD2<Float>) {
+    init(image: CGImage, position: CGPoint, size: SIMD2<Float>) {
         self.image = image
-        self.center = center
+        self.globalPosition = position
         self.size = size
     }
 
@@ -84,12 +82,12 @@ final class ImageItem: RenderItem, CanMarkAsDirty, HasGeneration {
         let p2 = simd_mul(matrix, size * SIMD2(0.5, -0.5))
 
         let vertexes: [SIMD2<Float>] = [
-            center - p1,
-            center + p1,
-            center - p2,
-            center + p1,
-            center - p1,
-            center + p2,
+            -p1,
+            p1,
+            -p2,
+            p1,
+            -p1,
+            p2,
         ]
         return device!.makeBuffer(bytes: vertexes, length: MemoryLayout<SIMD2<Float>>.size * 6)!
     }
@@ -105,7 +103,7 @@ final class ImageItem: RenderItem, CanMarkAsDirty, HasGeneration {
         let dx = max(abs(p1.x), abs(p2.x))
         let dy = max(abs(p1.y), abs(p2.y))
         let half_size = SIMD2(dx, dy)
-        return .init(origin: .from(center - half_size), size: .from(half_size * 2.0))
+        return .init(origin: .from(-half_size), size: .from(half_size * 2.0))
     }
 
     func upload(to device: MTLDevice) -> (texture: any MTLTexture, vertexBuffer: any MTLBuffer, uvBuffer: any MTLBuffer, vertexCount: Int) {

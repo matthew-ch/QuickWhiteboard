@@ -9,9 +9,16 @@ import Foundation
 
 @MainActor
 protocol RenderItem: AnyObject, ToolEditingItem {
-    var boundingRect: CGRect { get }
+    var globalPosition: CGPoint { get set }
+    var localBoundingRect: CGRect { get }
     var hidden: Bool { get set }
     var isOpaque: Bool { get }
+}
+
+extension RenderItem {
+    var boundingRect: CGRect {
+        localBoundingRect.offsetBy(dx: globalPosition.x, dy: globalPosition.y)
+    }
 }
 
 @MainActor
