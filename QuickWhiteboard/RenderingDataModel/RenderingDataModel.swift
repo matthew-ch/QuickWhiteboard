@@ -13,6 +13,7 @@ protocol RenderItem: AnyObject, ToolEditingItem {
     var localBoundingRect: CGRect { get }
     var hidden: Bool { get set }
     var isOpaque: Bool { get }
+    func distance(to globalLocation: CGPoint) -> Float
 }
 
 extension RenderItem {

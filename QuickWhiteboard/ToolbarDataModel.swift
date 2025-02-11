@@ -19,7 +19,8 @@ enum ToolIdentifier: Equatable, Hashable, Identifiable, CaseIterable {
     case ellipse
     case eraser
     case image
-    
+    case cursor
+
     var symbolName: String {
         switch self {
         case .freehand:
@@ -34,6 +35,8 @@ enum ToolIdentifier: Equatable, Hashable, Identifiable, CaseIterable {
             "xmark.circle"
         case .image:
             "photo"
+        case .cursor:
+            "cursorarrow.square"
         }
     }
     
@@ -51,24 +54,32 @@ enum ToolIdentifier: Equatable, Hashable, Identifiable, CaseIterable {
             "X"
         case .image:
             "I"
+        case .cursor:
+            "A"
         }
     }
-    
-    var tooltip: String {
+
+    var localizedKey: String {
         switch self {
         case .freehand:
-            "\(localizedString("Draw freehand")) (\(shortcutKey))"
+            "Draw freehand"
         case .line:
-            "\(localizedString("Draw line")) (\(shortcutKey))"
+            "Draw line"
         case .rectangle:
-            "\(localizedString("Draw rectangle")) (\(shortcutKey))"
+            "Draw rectangle"
         case .ellipse:
-            "\(localizedString("Draw ellipse")) (\(shortcutKey))"
+            "Draw ellipse"
         case .eraser:
-            "\(localizedString("Erase drawings")) (\(shortcutKey))"
+            "Erase drawings"
         case .image:
-            "\(localizedString("Insert image")) (\(shortcutKey))"
+            "Insert image"
+        case .cursor:
+            "Select & Move"
         }
+    }
+
+    var tooltip: String {
+        "\(localizedString(localizedKey)) (\(shortcutKey))"
     }
 }
 

@@ -151,7 +151,7 @@ final class Renderer {
 
     private func renderItem(_ item: any RenderItem, at depth: Float, with encoder: any MTLRenderCommandEncoder) {
         var offset = item.globalPosition.float2;
-        encoder.setVertexBytes(&offset, length: MemoryLayout<SIMD2<Float>>.size, index: Int(BufferIndexOffset.rawValue))
+        encoder.setVertexBytes(&offset, length: MemoryLayout<Point2D>.size, index: Int(BufferIndexOffset.rawValue))
         var depth = depth
         encoder.setVertexBytes(&depth, length: MemoryLayout<Float>.size, index: Int(BufferIndexDepth.rawValue))
         switch item {

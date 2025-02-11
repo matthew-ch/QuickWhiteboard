@@ -29,6 +29,7 @@ class ViewController: NSViewController {
     private lazy var ellipseTool = EllipseTool()
     private lazy var eraserTool = EraserTool()
     private lazy var imageTool = ImageTool()
+    private lazy var cursorTool = CursorTool()
 
     private var activeTool: any Tool {
         switch toolbarDataModel.activeToolIdentifier {
@@ -44,6 +45,8 @@ class ViewController: NSViewController {
             eraserTool
         case .image:
             imageTool
+        case .cursor:
+            cursorTool
         }
     }
     
@@ -156,7 +159,11 @@ class ViewController: NSViewController {
     }
 
     override func keyDown(with event: NSEvent) {
-        guard !isEditing, event.modifierFlags.intersection([.shift, .control, .control]).isEmpty, !event.isARepeat else {
+        if event.specialKey == .carriageReturn && !event.isARepeat {
+            commitActiveTool()
+            return
+        }
+        guard !isEditing, event.modifierFlags.intersection([.shift, .control, .option]).isEmpty, !event.isARepeat else {
             return
         }
         guard let chars = event.charactersIgnoringModifiers?.lowercased() else {
@@ -168,7 +175,7 @@ class ViewController: NSViewController {
                 if mouseIsInsideCanvas() {
                     activeTool.setCursor()
                 }
-                break;
+                break
             }
         }
     }
@@ -301,7 +308,19 @@ class ViewController: NSViewController {
         undoManager?.registerUndo(withTarget: self, selector: #selector(eraseItems(_:)), object: item)
         setNeedsDisplay()
     }
-    
+
+    @objc func moveItems(_ item: Any) {
+        (item as! MovedItems).apply()
+        undoManager?.registerUndo(withTarget: self, selector: #selector(undoMoveItems(_:)), object: item)
+        setNeedsDisplay()
+    }
+
+    @objc func undoMoveItems(_ item: Any) {
+        (item as! MovedItems).revert()
+        undoManager?.registerUndo(withTarget: self, selector: #selector(moveItems(_:)), object: item)
+        setNeedsDisplay()
+    }
+
     // MARK: utility methods
     
     private func mouseIsInsideCanvas() -> Bool {
@@ -373,6 +392,8 @@ extension ViewController: ToolHost {
             addItem(item)
         } else if let item = item as? ErasedItems {
             eraseItems(item)
+        } else if let item = item as? MovedItems {
+            moveItems(item)
         }
     }
 }
@@ -410,6 +431,7 @@ extension ViewController: ToolbarDelegate {
     }
 
     func onClickTool(identifier: ToolIdentifier) {
+        commitActiveTool()
         if identifier == .image {
             let openPanel = NSOpenPanel()
             openPanel.canChooseFiles = true

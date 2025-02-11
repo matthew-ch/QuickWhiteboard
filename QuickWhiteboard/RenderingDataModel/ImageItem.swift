@@ -14,7 +14,7 @@ import simd
 final class ImageItem: RenderItem, CanMarkAsDirty, HasGeneration {
     private(set) var image: CGImage
     var globalPosition: CGPoint = .zero
-    let size: SIMD2<Float>
+    let size: Size2D
 
     @DirtyMarking
     var scale: Float = 1.0
@@ -46,7 +46,7 @@ final class ImageItem: RenderItem, CanMarkAsDirty, HasGeneration {
     private var uvBuffer: (any MTLBuffer)
     
     static var textureLoader: MTKTextureLoader!
-    static let uvs: [SIMD2<Float>] = [
+    static let uvs: [Point2D] = [
         .init(0.0, 1.0),
         .init(1.0, 0.0),
         .init(0.0, 0.0),
@@ -61,10 +61,33 @@ final class ImageItem: RenderItem, CanMarkAsDirty, HasGeneration {
         generation += 1
     }
 
-    init(image: CGImage, position: CGPoint, size: SIMD2<Float>) {
+    init(image: CGImage, position: CGPoint, size: Size2D) {
         self.image = image
         self.globalPosition = position
         self.size = size
+    }
+
+    func distance(to globalLocation: CGPoint) -> Float {
+        let location = globalLocation.float2 - globalPosition.float2
+        let (p1, p2) = calculateP1P2()
+        let dist = min(
+            distanceFromPointToLineSegment(point: location, segmentPoints: p1, p2),
+            distanceFromPointToLineSegment(point: location, segmentPoints: p1, -p2),
+            distanceFromPointToLineSegment(point: location, segmentPoints: -p1, p2),
+            distanceFromPointToLineSegment(point: location, segmentPoints: -p1, -p2)
+        )
+        if isPointInside(point: location, p1: p1, p2: p2, p3: -p1) || isPointInside(point: location, p1: p1, p2: -p1, p3: -p2) {
+            return -dist
+        } else {
+            return dist
+        }
+    }
+
+    private func calculateP1P2() -> (Point2D, Point2D) {
+        let matrix = matrix2DRotateAndScale(radian: rotation, scale: scale)
+        let p1 = simd_mul(matrix, size * 0.5)
+        let p2 = simd_mul(matrix, size * SIMD2(0.5, -0.5))
+        return (p1, p2)
     }
 
     private var resolvedTexture: any MTLTexture {
@@ -77,11 +100,9 @@ final class ImageItem: RenderItem, CanMarkAsDirty, HasGeneration {
     }
 
     private var resolvedVertexBuffer: any MTLBuffer {
-        let matrix = matrix2DRotateAndScale(radian: rotation, scale: scale)
-        let p1 = simd_mul(matrix, size * 0.5)
-        let p2 = simd_mul(matrix, size * SIMD2(0.5, -0.5))
+        let (p1, p2) = calculateP1P2()
 
-        let vertexes: [SIMD2<Float>] = [
+        let vertexes: [Point2D] = [
             -p1,
             p1,
             -p2,
@@ -89,11 +110,11 @@ final class ImageItem: RenderItem, CanMarkAsDirty, HasGeneration {
             -p1,
             p2,
         ]
-        return device!.makeBuffer(bytes: vertexes, length: MemoryLayout<SIMD2<Float>>.size * 6)!
+        return device!.makeBuffer(bytes: vertexes, length: MemoryLayout<Point2D>.size * 6)!
     }
 
     private var resolvedUVBuffer: any MTLBuffer {
-        device!.makeBuffer(bytes: Self.uvs, length: MemoryLayout<SIMD2<Float>>.size * 6)!
+        device!.makeBuffer(bytes: Self.uvs, length: MemoryLayout<Point2D>.size * 6)!
     }
 
     private var resolvedBoundingRect: CGRect {

@@ -12,11 +12,11 @@ import SwiftUI
 let round_scale = 2.0
 
 extension CGPoint {
-    static func from(_ float2: SIMD2<Float>) -> Self {
+    static func from(_ float2: Point2D) -> Self {
         .init(x: CGFloat(float2.x), y: CGFloat(float2.y))
     }
 
-    var float2: SIMD2<Float> {
+    var float2: Point2D {
         .init(x: Float(x), y: Float(y))
     }
     
@@ -26,11 +26,11 @@ extension CGPoint {
 }
 
 extension CGSize {
-    static func from(_ float2: SIMD2<Float>) -> Self {
+    static func from(_ float2: Size2D) -> Self {
         .init(width: CGFloat(float2.x), height: CGFloat(float2.y))
     }
 
-    var float2: SIMD2<Float> {
+    var float2: Size2D {
         .init(x: Float(width), y: Float(height))
     }
     

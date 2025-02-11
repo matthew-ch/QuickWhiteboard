@@ -37,6 +37,10 @@ final class GridItem: RenderItem {
         self.localBoundingRect = boundingRect
     }
 
+    func distance(to globalLocation: CGPoint) -> Float {
+        .infinity
+    }
+
     func upload(to device: MTLDevice) -> (vetexBuffer: any MTLBuffer, vertexCount: Int) {
         let vLineCount = Int(localBoundingRect.width / gridSpacing) + 1
         let hLineCount = Int(localBoundingRect.height / gridSpacing) + 1
@@ -47,11 +51,11 @@ final class GridItem: RenderItem {
         let hLineLeftX = Float(localBoundingRect.minX)
         let hLineRightX = Float(localBoundingRect.maxX)
         let vertexCount = (vLineCount + hLineCount) * 2
-        let size = vertexCount * MemoryLayout<SIMD2<Float>>.size
+        let size = vertexCount * MemoryLayout<Point2D>.size
         if vertexBuffer == nil || vertexBuffer!.length < size {
             vertexBuffer = device.makeBuffer(length: size, options: .storageModeShared)
         }
-        vertexBuffer!.contents().withMemoryRebound(to: SIMD2<Float>.self, capacity: vertexCount) { pointer in
+        vertexBuffer!.contents().withMemoryRebound(to: Point2D.self, capacity: vertexCount) { pointer in
             for i in 0..<vLineCount {
                 let x = Float(i) * Float(gridSpacing) + vLineStartX
                 pointer[2 * i].x = x

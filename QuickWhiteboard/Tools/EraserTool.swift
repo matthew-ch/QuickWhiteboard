@@ -10,7 +10,7 @@ import AppKit
 
 let eraserRadius = 5.0
 
-class EraserTool: Tool {
+final class EraserTool: Tool {
     private var _editingItem: ErasedItems? = nil
     var editingItem: (any ToolEditingItem)? {
         _editingItem
@@ -27,11 +27,10 @@ class EraserTool: Tool {
             if renderItem.hidden || !renderItem.boundingRect.insetBy(dx: -eraserRadius, dy: -eraserRadius).contains(location) {
                 continue
             }
-            guard let drawingItem = renderItem as? DrawingItem else {
+            if renderItem is ImageItem && !NSEvent.modifierFlags.contains(.option) {
                 continue
             }
-            let distanceTest = drawingItem.strokeWidth / 2.0 + Float(eraserRadius)
-            if drawingItem.distanceToPath(from: location) <= distanceTest {
+            if renderItem.distance(to: location) <=  Float(eraserRadius) {
                 return renderItem
             }
         }

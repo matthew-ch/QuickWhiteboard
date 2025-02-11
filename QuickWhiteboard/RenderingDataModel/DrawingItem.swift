@@ -10,7 +10,7 @@ import Metal
 import simd
 
 struct PointSample {
-    let location: SIMD2<Float>
+    let location: Point2D
 }
 
 class DrawingItem: RenderItem, CanMarkAsDirty, HasGeneration {
@@ -46,18 +46,18 @@ class DrawingItem: RenderItem, CanMarkAsDirty, HasGeneration {
         self.strokeWidth = Float(strokeWidth)
     }
 
-    func generateTriangles(point: PointSample, previousPoint: PointSample?, nextPoint: PointSample?) -> [SIMD2<Float>] {
+    func generateTriangles(point: PointSample, previousPoint: PointSample?, nextPoint: PointSample?) -> [Point2D] {
         let location = point.location
         let previousLocation = previousPoint?.location
         let nextLocation = nextPoint?.location
 
         let pointTriangleCount = max(Int(ceilf(Float.pi * strokeWidth / 2.0)), 4)
-        var points: [SIMD2<Float>] = divideUnitCircle(count: pointTriangleCount)
+        var points: [Point2D] = divideUnitCircle(count: pointTriangleCount)
         points.append(points[0])
         let radius = strokeWidth / 2.0
         var visibleIndices = Array(0..<pointTriangleCount)
 
-        var result: [SIMD2<Float>] = []
+        var result: [Point2D] = []
 
         if let nextLocation {
             let v = normalize(location - nextLocation)
@@ -68,7 +68,7 @@ class DrawingItem: RenderItem, CanMarkAsDirty, HasGeneration {
 
         if let previousLocation {
             let v = normalize(location - previousLocation)
-            let u = SIMD2<Float>(-v.y, v.x)
+            let u = Vector2D(-v.y, v.x)
             let p0 = previousLocation + u * radius
             let p1 = previousLocation - u * radius
             let p2 = location + u * radius
@@ -93,8 +93,8 @@ class DrawingItem: RenderItem, CanMarkAsDirty, HasGeneration {
         return result
     }
 
-    func generateVertexes(points: [PointSample]) -> [SIMD2<Float>] {
-        var result: [SIMD2<Float>] = []
+    func generateVertexes(points: [PointSample]) -> [Point2D] {
+        var result: [Point2D] = []
         for i in 0..<points.count {
             let previousPoint = i == 0 ? (isClosedPath ? points.last : nil) : points[i - 1]
             let nextPoint = i + 1 < points.count ? points[i + 1] : (isClosedPath ? points.first : nil)
@@ -107,24 +107,25 @@ class DrawingItem: RenderItem, CanMarkAsDirty, HasGeneration {
 
     private var generateVertexBuffer: any MTLBuffer {
         let vertexes = generateVertexes(points: points)
-        return device!.makeBuffer(bytes: vertexes, length: MemoryLayout<SIMD2<Float>>.size * max(vertexes.count, 1))!
+        return device!.makeBuffer(bytes: vertexes, length: MemoryLayout<Point2D>.size * max(vertexes.count, 1))!
     }
 
     func upload(to device: MTLDevice) -> (vetexBuffer: any MTLBuffer, vertexCount: Int) {
         self.device = device
-        return (vertexBuffer, vertexBuffer.length / MemoryLayout<SIMD2<Float>>.size)
+        return (vertexBuffer, vertexBuffer.length / MemoryLayout<Point2D>.size)
     }
 
     final func markAsDirty() {
         generation += 1
     }
 
-    func distanceToPath(from globalLocation: CGPoint) -> Float {
+    func distance(to globalLocation: CGPoint) -> Float {
         let location = globalLocation.float2 - globalPosition.float2
         var previousPoint = isClosedPath ? points.last! : points[0]
         var minDistance = Float.infinity
+        let halfStroke = strokeWidth / 2.0
         for point in points {
-            let d = distanceFromPointToLineSegment(point: location, segmentPoints: previousPoint.location, point.location)
+            let d = distanceFromPointToLineSegment(point: location, segmentPoints: previousPoint.location, point.location) - halfStroke
             previousPoint = point
             minDistance = min(minDistance, d)
         }
@@ -149,8 +150,8 @@ final class FreehandItem: DrawingItem {
 
     private var resolvedBoundingRect: CGRect {
         assert(!points.isEmpty)
-        var minxy = SIMD2<Float>(x: Float.infinity, y: Float.infinity)
-        var maxxy = SIMD2<Float>(x: -Float.infinity, y: -Float.infinity)
+        var minxy = Point2D(x: Float.infinity, y: Float.infinity)
+        var maxxy = Point2D(x: -Float.infinity, y: -Float.infinity)
         for point in points {
             minxy = simd_min(minxy, point.location - strokeWidth)
             maxxy = simd_max(maxxy, point.location + strokeWidth)
@@ -185,7 +186,7 @@ final class LineItem: DrawingItem {
     }
 
     @OnDemand(\LineItem.resolvedEndPoint)
-    private var endPoint: SIMD2<Float>
+    private var endPoint: Point2D
 
     @OnDemand(\LineItem.resolvedBoundingRect)
     private var _boundingRect: CGRect
@@ -194,10 +195,10 @@ final class LineItem: DrawingItem {
     }
 
     @DirtyMarking
-    var from: SIMD2<Float> = .zero
+    var from: Point2D = .zero
 
     @DirtyMarking
-    var to: SIMD2<Float> = .zero
+    var to: Point2D = .zero
 
     @DirtyMarking
     var isCenterMode = false
@@ -220,7 +221,7 @@ final class LineItem: DrawingItem {
         }
     }
 
-    private var resolvedEndPoint: SIMD2<Float> {
+    private var resolvedEndPoint: Point2D {
         if isAligning {
             let v = to - from
             let dots = Self.dirXs * v.x + Self.dirYs * v.y
@@ -232,7 +233,7 @@ final class LineItem: DrawingItem {
                     maxIndex = index
                 }
             }
-            let u = SIMD2<Float>(Self.dirXs[maxIndex], Self.dirYs[maxIndex]) * maxValue
+            let u = Point2D(Self.dirXs[maxIndex], Self.dirYs[maxIndex]) * maxValue
             return from + u
         }
         return to
@@ -258,13 +259,13 @@ final class RectangleItem: DrawingItem {
     }
 
     @OnDemand(\RectangleItem.resolvedEndPoint)
-    private var endPoint: SIMD2<Float>
+    private var endPoint: Point2D
 
     @DirtyMarking
-    var from: SIMD2<Float> = .zero
+    var from: Point2D = .zero
 
     @DirtyMarking
-    var to: SIMD2<Float> = .zero
+    var to: Point2D = .zero
 
     @DirtyMarking
     var isCenterMode = false
@@ -285,7 +286,7 @@ final class RectangleItem: DrawingItem {
         }
     }
 
-    private var resolvedEndPoint: SIMD2<Float> {
+    private var resolvedEndPoint: Point2D {
         if isSquare {
             let diff = to - from
             let length = abs(diff).max()
@@ -299,7 +300,7 @@ final class RectangleItem: DrawingItem {
             return [PointSample(location: from)]
         } else {
             let to = endPoint
-            let from: SIMD2<Float>
+            let from: Point2D
             if isCenterMode {
                 from = self.from * 2.0 - to
             } else {
@@ -340,10 +341,10 @@ final class EllipseItem: DrawingItem {
     }
 
     @DirtyMarking
-    var from: SIMD2<Float> = .zero
+    var from: Point2D = .zero
 
     @DirtyMarking
-    var to: SIMD2<Float> = .zero
+    var to: Point2D = .zero
 
     @DirtyMarking
     var isCircle = false
@@ -351,8 +352,8 @@ final class EllipseItem: DrawingItem {
     @DirtyMarking
     var isCenterMode = false
 
-    private func calcCenterRxRy() -> (SIMD2<Float>, Float, Float) {
-        let center: SIMD2<Float>
+    private func calcCenterRxRy() -> (Point2D, Float, Float) {
+        let center: Point2D
         if isCircle {
             let r: Float
             if isCenterMode {
@@ -379,7 +380,7 @@ final class EllipseItem: DrawingItem {
 
     private var resolvedBoundingRect: CGRect {
         let (center, rx, ry) = calcCenterRxRy()
-        let rs = SIMD2<Float>(x: rx + strokeWidth / 2.0, y: ry + strokeWidth / 2.0)
+        let rs = Vector2D(x: rx + strokeWidth / 2.0, y: ry + strokeWidth / 2.0)
         return CGRect(origin: .from(center - rs), size: .from(rs * 2.0))
     }
 
@@ -394,7 +395,7 @@ final class EllipseItem: DrawingItem {
                 PointSample(location: center + .init(x: rx, y: ry))
             ]
         }
-        var points: [SIMD2<Float>] = []
+        var points: [Point2D] = []
         var theta: Float = 0.0
         let rxsqr = rx * rx
         let rysqr = ry * ry
