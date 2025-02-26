@@ -107,6 +107,17 @@ final class CursorTool: Tool {
         }
     }
 
+    func handleDelete(host: any ToolHost) {
+        if case let .movingSelection(movingItem, _) = state {
+            let erasedItem = ErasedItems()
+            erasedItem.selected = movingItem.items
+            commit(to: host)
+            DispatchQueue.main.async {
+                host.commit(item: erasedItem)
+            }
+        }
+    }
+
     func setCursor() {
         NSCursor.arrow.set()
     }

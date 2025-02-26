@@ -159,6 +159,13 @@ class ViewController: NSViewController {
     }
 
     override func keyDown(with event: NSEvent) {
+        guard !isLeftMouseDown && !isRightMouseDown else {
+            return
+        }
+        if event.specialKey == .backspace || event.specialKey == .delete {
+            activeTool.handleDelete(host: self)
+            return
+        }
         if event.specialKey == .carriageReturn && !event.isARepeat {
             commitActiveTool()
             return

@@ -27,10 +27,14 @@ protocol Tool: AnyObject {
     func mouseDown(with event: NSEvent, location: CGPoint, host: any ToolHost) -> Void
     func mouseUp(with event: NSEvent, location: CGPoint, host: any ToolHost) -> Void
     func mouseDragged(with event: NSEvent, location: CGPoint, host: any ToolHost) -> Void
+    func handleDelete(host: any ToolHost) -> Void
     func setCursor() -> Void
 }
 
 extension Tool {
+    func handleDelete(host: any ToolHost) {
+        // do nothing by default
+    }
     func setCursor() {
         NSCursor.crosshair.set()
     }

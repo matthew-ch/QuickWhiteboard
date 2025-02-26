@@ -256,56 +256,43 @@ struct StrokePresetsMenu: View {
     }
 }
 
-struct MainToolbar: View {
+struct StrokeEditingView: View {
     @ObservedObject var dataModel: ToolbarDataModel
     weak var delegate: (any ToolbarDelegate)?
 
     var body: some View {
-        GeometryReader { proxy in
-            HStack {
-                ForEach(ToolIdentifier.allCases) { id in
-                    Button(action: {
-                        delegate?.onClickTool(identifier: id)
-                    }, label: {
-                        Image(systemName: id.symbolName)
-                            .foregroundColor(id == dataModel.activeToolIdentifier ? Color.accentColor : Color.primary)
-                    })
-                    .help(id.tooltip)
-                }
-                Spacer()
-                if proxy.size.width >= 520 {
-                    Text("Stroke")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                }
+        Text("Stroke")
+            .font(.caption)
+            .foregroundColor(.secondary)
 
-                StrokeWidthEditor(width: $dataModel.strokeWidth)
+        StrokeWidthEditor(width: $dataModel.strokeWidth)
 
-                StrokeColorEditor(color: $dataModel.strokeColor)
+        StrokeColorEditor(color: $dataModel.strokeColor)
 
-                StrokePresetsMenu(dataModel: dataModel, delegate: delegate)
+        StrokePresetsMenu(dataModel: dataModel, delegate: delegate)
+    }
+}
 
-                Spacer()
-#if DEBUG
-                Button(action: {
-                    delegate?.toggleDebug()
-                }, label: {
-                    Image(systemName: "ladybug")
-                })
-                .help("Toggle debug")
-#endif
-                ExportButton()
-                    .help("Export")
-            }
-            .frame(height: proxy.size.height)
-            .padding(.horizontal)
+struct MainToolsView: View {
+    @ObservedObject var dataModel: ToolbarDataModel
+    weak var delegate: (any ToolbarDelegate)?
+
+    var body: some View {
+        ForEach(ToolIdentifier.allCases) { id in
+            Button(action: {
+                delegate?.onClickTool(identifier: id)
+            }, label: {
+                Image(systemName: id.symbolName)
+                    .foregroundColor(id == dataModel.activeToolIdentifier ? Color.accentColor : Color.primary)
+            })
+            .help(id.tooltip)
         }
     }
 }
 
 
-struct ImageEditToolbar: View {
-    static let presetScales = [25, 50]
+struct ImageEditingView: View {
+    static let presetScales = [25, 50, 100, 125, 150]
     static let presetRotations = [90, 180, 270]
 
     @ObservedObject var imageItemProperty: ImageItemProperty
@@ -327,10 +314,10 @@ struct ImageEditToolbar: View {
             }
             .frame(width: 65)
 
-            Slider(value: $imageItemProperty.scale, in: 1...100)
-            
+            Slider(value: $imageItemProperty.scale, in: 1...200)
+
             Spacer()
-            
+
             Menu {
                 ForEach(Self.presetRotations, id: \.self) { rotation in
                     Button(action: {
@@ -344,19 +331,18 @@ struct ImageEditToolbar: View {
                     .font(.caption)
             }
             .frame(width: 70)
-            
-            Slider(value: $imageItemProperty.rotation, in: 0...360)
-            
+
+            Slider(value: $imageItemProperty.rotation, in: 0...359)
+
             Spacer()
-            
+
             Button(action: {
                 delegate?.commitActiveTool()
             }, label: {
                 Text("Done")
             })
-            
         }
-        .padding(.horizontal)
+        .frame(minWidth: 400.0)
     }
 }
 
@@ -366,10 +352,32 @@ struct ToolbarControls: View {
     weak var delegate: (any ToolbarDelegate)?
     
     var body: some View {
-        if dataModel.activeToolIdentifier == .image {
-            ImageEditToolbar(imageItemProperty: dataModel.imageItemProperty, delegate: delegate)
-        } else {
-            MainToolbar(dataModel: dataModel, delegate: delegate)
+        GeometryReader { proxy in
+            ScrollView([.horizontal], showsIndicators: false) {
+                HStack {
+                    MainToolsView(dataModel: dataModel, delegate: delegate)
+                    Spacer()
+                    if dataModel.activeToolIdentifier == .image {
+                        ImageEditingView(imageItemProperty: dataModel.imageItemProperty, delegate: delegate)
+                    } else {
+                        StrokeEditingView(dataModel: dataModel, delegate: delegate)
+                    }
+                    Spacer()
+#if DEBUG
+                    Button(action: {
+                        delegate?.toggleDebug()
+                    }, label: {
+                        Image(systemName: "ladybug")
+                    })
+                    .help("Toggle debug")
+#endif
+                    ExportButton()
+                        .help("Export")
+                }
+                .padding(.horizontal)
+                .frame(minWidth: proxy.size.width)
+                .frame(height: proxy.size.height)
+            }
         }
     }
 }
@@ -384,6 +392,9 @@ struct ToolbarControls: View {
             .frame(width: 499, height: 40)
 
         ToolbarControls(dataModel: ToolbarDataModel(strokeWidth: 2.0, strokeColor: presetColors[1], strokePresets: strokePresets))
+            .frame(width: 700, height: 40)
+
+        ToolbarControls(dataModel: ToolbarDataModel( strokeWidth: 2.0, strokeColor: presetColors[1], strokePresets: strokePresets, activeToolIdentifier: .image))
             .frame(width: 700, height: 40)
     }
 }
