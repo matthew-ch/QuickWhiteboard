@@ -180,7 +180,7 @@ class ViewController: NSViewController {
             if toolIdentifier.shortcutKey.lowercased() == chars {
                 onClickTool(identifier: toolIdentifier)
                 if mouseIsInsideCanvas() {
-                    activeTool.setCursor()
+                    activeTool.setCursor(host: self)
                 }
                 break
             }
@@ -191,7 +191,7 @@ class ViewController: NSViewController {
         if isRightMouseDown {
             NSCursor.closedHand.set()
         } else {
-            activeTool.setCursor()
+            activeTool.setCursor(host: self)
         }
     }
 

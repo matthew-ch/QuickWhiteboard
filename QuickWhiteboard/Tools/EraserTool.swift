@@ -8,8 +8,6 @@
 import Foundation
 import AppKit
 
-let eraserRadius = 5.0
-
 final class EraserTool: Tool {
     private var _editingItem: ErasedItems? = nil
     var editingItem: (any ToolEditingItem)? {
@@ -22,7 +20,7 @@ final class EraserTool: Tool {
         }
     }
     
-    private func queryIntersectedItem(location: CGPoint, renderItems: [any RenderItem]) -> RenderItem? {
+    private func queryIntersectedItem(location: CGPoint, renderItems: [any RenderItem], eraserRadius: CGFloat) -> RenderItem? {
         for renderItem in renderItems.reversed() {
             if renderItem.hidden || !renderItem.boundingRect.insetBy(dx: -eraserRadius, dy: -eraserRadius).contains(location) {
                 continue
@@ -39,7 +37,7 @@ final class EraserTool: Tool {
     
     func mouseDown(with event: NSEvent, location: CGPoint, host: any ToolHost) {
         let item = ErasedItems()
-        if let renderItem = queryIntersectedItem(location: location, renderItems: host.renderItems) {
+        if let renderItem = queryIntersectedItem(location: location, renderItems: host.renderItems, eraserRadius: host.toolbarDataModel.eraserWidth / 2.0) {
             renderItem.hidden = true
             item.selected.append(renderItem)
             host.setNeedsDisplay()
@@ -53,16 +51,26 @@ final class EraserTool: Tool {
     
     func mouseDragged(with event: NSEvent, location: CGPoint, host: any ToolHost) {
         if let item = _editingItem,
-           let renderItem = queryIntersectedItem(location: location, renderItems: host.renderItems) {
+           let renderItem = queryIntersectedItem(location: location, renderItems: host.renderItems, eraserRadius: host.toolbarDataModel.eraserWidth / 2.0) {
             renderItem.hidden = true
             item.selected.append(renderItem)
             host.setNeedsDisplay()
         }
     }
     
-    func setCursor() {
-        let image = NSImage(systemSymbolName: ToolIdentifier.eraser.symbolName, accessibilityDescription: nil)!
-        NSCursor(image: image, hotSpot: CGPoint.from(image.size.float2 / 2.0)).set()
+    func setCursor(host: any ToolHost) {
+        let eraserWidth = host.toolbarDataModel.eraserWidth
+        let cursorSize = NSSize(width: max(8.0, eraserWidth + 1.0), height: max(8.0, eraserWidth + 1))
+        let cursorImage = NSImage(size: cursorSize, flipped: true) { rect in
+            let path = NSBezierPath(ovalIn: NSRect(x: (cursorSize.width - eraserWidth) / 2.0, y: (cursorSize.height - eraserWidth) / 2.0, width: eraserWidth, height: eraserWidth))
+            path.move(to: NSPoint(x: cursorSize.width / 2.0 - 4.0, y: cursorSize.height / 2.0 - 4.0))
+            path.line(to: NSPoint(x: cursorSize.width / 2.0 + 4.0, y: cursorSize.height / 2.0 + 4.0))
+            path.move(to: NSPoint(x: cursorSize.width / 2.0 - 4.0, y: cursorSize.height / 2.0 + 4.0))
+            path.line(to: NSPoint(x: cursorSize.width / 2.0 + 4.0, y: cursorSize.height / 2.0 - 4.0))
+            path.stroke()
+            return true
+        }
+        NSCursor(image: cursorImage, hotSpot: NSPoint(x: cursorSize.width / 2.0, y: cursorSize.height / 2.0)).set()
     }
 
 }

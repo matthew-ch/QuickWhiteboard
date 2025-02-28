@@ -28,14 +28,25 @@ protocol Tool: AnyObject {
     func mouseUp(with event: NSEvent, location: CGPoint, host: any ToolHost) -> Void
     func mouseDragged(with event: NSEvent, location: CGPoint, host: any ToolHost) -> Void
     func handleDelete(host: any ToolHost) -> Void
-    func setCursor() -> Void
+    func setCursor(host: any ToolHost) -> Void
 }
 
 extension Tool {
     func handleDelete(host: any ToolHost) {
         // do nothing by default
     }
-    func setCursor() {
-        NSCursor.crosshair.set()
+    func setCursor(host: any ToolHost) {
+        let strokeWidth = host.toolbarDataModel.strokeWidth
+        let cursorSize = NSSize(width: max(8.0, strokeWidth + 1.0), height: max(8.0, strokeWidth + 1))
+        let cursorImage = NSImage(size: cursorSize, flipped: true) { rect in
+            let path = NSBezierPath(ovalIn: NSRect(x: (cursorSize.width - strokeWidth) / 2.0, y: (cursorSize.height - strokeWidth) / 2.0, width: strokeWidth, height: strokeWidth))
+            path.move(to: NSPoint(x: cursorSize.width / 2.0 - 4.0, y: cursorSize.height / 2.0))
+            path.line(to: NSPoint(x: cursorSize.width / 2.0 + 4.0, y: cursorSize.height / 2.0))
+            path.move(to: NSPoint(x: cursorSize.width / 2.0, y: cursorSize.height / 2.0 - 4.0))
+            path.line(to: NSPoint(x: cursorSize.width / 2.0, y: cursorSize.height / 2.0 + 4.0))
+            path.stroke()
+            return true
+        }
+        NSCursor(image: cursorImage, hotSpot: NSPoint(x: cursorSize.width / 2.0, y: cursorSize.height / 2.0)).set()
     }
 }

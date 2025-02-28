@@ -346,6 +346,40 @@ struct ImageEditingView: View {
     }
 }
 
+struct EraserWidthEditor: View {
+    static let presetEraserWidth = [10, 20, 40, 80]
+    static let formatter = {
+        let formatter = NumberFormatter()
+        formatter.maximumIntegerDigits = 2
+        formatter.numberStyle = .none
+        formatter.minimum = 1
+        formatter.maximum = 99
+        return formatter
+    }()
+
+    @Binding var width: CGFloat
+
+    var body: some View {
+        HStack {
+            Text("Width")
+                .font(.caption)
+                .foregroundColor(.secondary)
+            ForEach(Self.presetEraserWidth, id: \.self) { i in
+                Button {
+                    width = CGFloat(i)
+                } label: {
+                    Text("\(i)")
+                }
+            }
+            Text("Customize")
+                .font(.caption)
+                .foregroundColor(.secondary)
+            TextField("Width", value: $width, formatter: Self.formatter)
+                .frame(width: 32)
+        }
+    }
+}
+
 struct ToolbarControls: View {
     
     @ObservedObject var dataModel: ToolbarDataModel
@@ -359,6 +393,8 @@ struct ToolbarControls: View {
                     Spacer()
                     if dataModel.activeToolIdentifier == .image {
                         ImageEditingView(imageItemProperty: dataModel.imageItemProperty, delegate: delegate)
+                    } else if dataModel.activeToolIdentifier == .eraser {
+                        EraserWidthEditor(width: $dataModel.eraserWidth)
                     } else {
                         StrokeEditingView(dataModel: dataModel, delegate: delegate)
                     }
@@ -388,8 +424,8 @@ struct ToolbarControls: View {
         StrokePreset(width: 4.0, color: presetColors[1]),
     ]
     Group {
-        ToolbarControls(dataModel: ToolbarDataModel(strokeWidth: 2.0, strokeColor: presetColors[0], strokePresets: strokePresets))
-            .frame(width: 499, height: 40)
+        ToolbarControls(dataModel: ToolbarDataModel(strokeWidth: 2.0, strokeColor: presetColors[0], strokePresets: strokePresets, activeToolIdentifier: .eraser))
+            .frame(width: 700, height: 40)
 
         ToolbarControls(dataModel: ToolbarDataModel(strokeWidth: 2.0, strokeColor: presetColors[1], strokePresets: strokePresets))
             .frame(width: 700, height: 40)

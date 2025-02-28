@@ -92,6 +92,7 @@ class ToolbarDataModel: ObservableObject {
     @Published var strokeWidth: CGFloat
     @Published var strokeColor: SIMD4<Float>
     @Published var strokePresets: [StrokePreset]
+    @Published var eraserWidth: CGFloat
     @Published var activeToolIdentifier: ToolIdentifier
     @Published var imageItemProperty: ImageItemProperty
 
@@ -99,11 +100,13 @@ class ToolbarDataModel: ObservableObject {
         strokeWidth: CGFloat,
         strokeColor: SIMD4<Float>,
         strokePresets: [StrokePreset] = [],
+        eraserWidth: CGFloat = 10.0,
         activeToolIdentifier: ToolIdentifier = .freehand,
         imageItemProperty: ImageItemProperty = ImageItemProperty()
     ) {
         self.strokeWidth = strokeWidth
         self.strokeColor = strokeColor
+        self.eraserWidth = eraserWidth
         self.strokePresets = strokePresets
         self.activeToolIdentifier = activeToolIdentifier
         self.imageItemProperty = imageItemProperty

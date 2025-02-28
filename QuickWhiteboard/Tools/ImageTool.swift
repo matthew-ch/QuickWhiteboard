@@ -55,7 +55,7 @@ final class ImageTool: Tool {
         }
     }
     
-    func setCursor() {
+    func setCursor(host: any ToolHost) {
         let image = NSImage(systemSymbolName: "arrow.up.and.down.and.arrow.left.and.right", accessibilityDescription: nil)!
         NSCursor(image: image, hotSpot: CGPoint.from(image.size.float2 / 2.0)).set()
     }

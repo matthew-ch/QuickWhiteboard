@@ -118,7 +118,7 @@ final class CursorTool: Tool {
         }
     }
 
-    func setCursor() {
+    func setCursor(host: any ToolHost) {
         NSCursor.arrow.set()
     }
 }
