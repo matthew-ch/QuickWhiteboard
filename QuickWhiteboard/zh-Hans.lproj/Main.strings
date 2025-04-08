@@ -71,8 +71,10 @@
 /* Class = "NSMenu"; title = "Window"; ObjectID = "Td7-aD-5lo"; */
 "Td7-aD-5lo.title" = "窗口";
 
-/* Class = "NSMenuItem"; title = "Clear"; ObjectID = "VLh-lp-Pgd"; */
-"VLh-lp-Pgd.title" = "清除";
+/* Class = "NSMenuItem"; title = "Clear Strokes"; ObjectID = "VLh-lp-Pgd"; */
+"VLh-lp-Pgd.title" = "清除笔触";
+
+"rn2-kE-RxA.title" = "清除全部";
 
 /* Class = "NSMenuItem"; title = "Hide Others"; ObjectID = "Vdr-fp-XzO"; */
 "Vdr-fp-XzO.title" = "隐藏其它";

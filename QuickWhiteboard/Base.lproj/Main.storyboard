@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<document type="com.apple.InterfaceBuilder3.Cocoa.Storyboard.XIB" version="3.0" toolsVersion="23504" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none" useAutolayout="YES">
+<document type="com.apple.InterfaceBuilder3.Cocoa.Storyboard.XIB" version="3.0" toolsVersion="23727" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none" useAutolayout="YES">
     <dependencies>
         <deployment identifier="macosx"/>
-        <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="23504"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="23727"/>
         <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
     </dependencies>
     <scenes>
@@ -94,12 +94,21 @@
                                             </connections>
                                         </menuItem>
                                         <menuItem isSeparatorItem="YES" id="WRV-NI-Exz"/>
-                                        <menuItem title="Clear" id="VLh-lp-Pgd">
+                                        <menuItem title="Clear Strokes" id="VLh-lp-Pgd">
                                             <string key="keyEquivalent" base64-UTF8="YES">
 CA
 </string>
                                             <connections>
-                                                <action selector="clear:" target="Ady-hI-5gd" id="9mz-QF-lEK"/>
+                                                <action selector="clearStrokes:" target="Ady-hI-5gd" id="Gqj-qQ-Y8w"/>
+                                            </connections>
+                                        </menuItem>
+                                        <menuItem title="Clear All" alternate="YES" id="rn2-kE-RxA">
+                                            <string key="keyEquivalent" base64-UTF8="YES">
+CA
+</string>
+                                            <modifierMask key="keyEquivalentModifierMask" option="YES" command="YES"/>
+                                            <connections>
+                                                <action selector="clearAll:" target="Ady-hI-5gd" id="770-zO-ihW"/>
                                             </connections>
                                         </menuItem>
                                         <menuItem isSeparatorItem="YES" id="pNZ-lT-u7z"/>

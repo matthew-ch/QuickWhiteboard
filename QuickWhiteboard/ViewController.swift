@@ -269,11 +269,21 @@ class ViewController: NSViewController {
         pasteboard.clearContents()
         pasteboard.writeObjects([image])
     }
-    
-    @IBAction func clear(_ sender: Any) {
-        guard !items.isEmpty else {
-            return
+
+    @IBAction func clearStrokes(_ sender: Any) {
+        let erasedItems = ErasedItems()
+        for item in items {
+            if item is ImageItem || item.hidden {
+                continue
+            }
+            erasedItems.selected.append(item)
         }
+        if (!erasedItems.selected.isEmpty) {
+            eraseItems(erasedItems)
+        }
+    }
+
+    @IBAction func clearAll(_: Any) {
         let removedItems = items as NSArray
         items = []
         undoManager?.registerUndo(withTarget: self, selector: #selector(restoreClearedItems(_:)), object: removedItems)
@@ -287,7 +297,7 @@ class ViewController: NSViewController {
 
     @objc func restoreClearedItems(_ removedItems: Any) {
         items = removedItems as! NSArray as! Array<any RenderItem>
-        undoManager?.registerUndo(withTarget: self, selector: #selector(clear(_:)), object: nil)
+        undoManager?.registerUndo(withTarget: self, selector: #selector(clearAll(_:)), object: nil)
         setNeedsDisplay()
     }
 
@@ -415,12 +425,6 @@ extension ViewController: ToolbarDelegate {
     
     @objc
     func exportCanvas(_ sender: NSButton) {
-        guard !items.isEmpty else {
-            let alert = NSAlert()
-            alert.messageText = "No content yet"
-            alert.beginSheetModal(for: view.window!)
-            return
-        }
         let image = renderImage()
         NSSharingServicePicker(items: [image]).show(relativeTo: .zero, of: sender, preferredEdge: .minY)
     }
@@ -479,7 +483,10 @@ extension ViewController: NSMenuItemValidation {
         if menuItem.action == #selector(copy(_:)) {
             return !isEditing && !items.isEmpty
         }
-        if menuItem.action == #selector(clear(_:)) {
+        if menuItem.action == #selector(clearStrokes(_:)) {
+            return !isEditing && !items.isEmpty
+        }
+        if menuItem.action == #selector(clearAll(_:)) {
             return !isEditing && !items.isEmpty
         }
         if menuItem.action == #selector(toggleGrid(_:)) {
