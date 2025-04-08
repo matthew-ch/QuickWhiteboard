@@ -115,11 +115,12 @@ fileprivate struct StrokeColorSizeWidget: View {
                     Spacer(minLength: 0)
                 }
                     .frame(width: 22)
-                    .background(Rectangle().fill(Color.white.opacity(0.8)))
+                    .background(Rectangle().colorInvert())
                     .overlay(
-                        Rectangle().fill(Color.gray.opacity(0.75)).frame(height: 1),
+                        Rectangle().frame(height: 1),
                         alignment: .top
-                    ),
+                    )
+                    .opacity(0.75),
                 alignment: .bottom
             )
             .clipShape(Circle())
