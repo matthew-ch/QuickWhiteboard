@@ -515,9 +515,11 @@ extension ViewController: NSDraggingDestination {
         sender.enumerateDraggingItems(for: nil, classes: supportedClasses, searchOptions: searchOptions) { draggingItem, _, stop in
             switch draggingItem.item {
             case let filePromiseReceiver as NSFilePromiseReceiver:
-                filePromiseReceiver.receivePromisedFiles(atDestination: self.destinationURL, operationQueue: self.workQueue) { fileUrl, error in
+                filePromiseReceiver.receivePromisedFiles(atDestination: self.destinationURL, operationQueue: self.workQueue) { @Sendable fileUrl, error in
                     if error == nil {
-                        self.handleFile(url: fileUrl)
+                        Task { @MainActor in
+                            self.handleFile(url: fileUrl)
+                        }
                     }
                 }
                 stop.pointee = true
