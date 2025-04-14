@@ -50,7 +50,9 @@ struct ToolbarControls: View {
                     if dataModel.activeToolIdentifier == .image {
                         ImageEditingView(imageItemProperty: dataModel.imageItemProperty, delegate: delegate)
                     } else if dataModel.activeToolIdentifier == .eraser {
-                        EraserWidthEditor(width: $dataModel.eraserWidth)
+                        WidthEditor(width: $dataModel.eraserWidth, presets: [10, 20, 40, 80], minimum: 1, maximum: 100, isInline: true)
+                    } else if dataModel.activeToolIdentifier == .grid {
+                        GridEditingView(isGridVisible: $dataModel.isGridVisible, gridColor: $dataModel.gridColor, spacing: $dataModel.gridSpacing)
                     } else if dataModel.activeToolIdentifier != .cursor {
                         StrokeEditingView(dataModel: dataModel, delegate: delegate)
                     }
@@ -89,6 +91,9 @@ struct ToolbarControls: View {
             .frame(width: 700, height: 40)
 
         ToolbarControls(dataModel: ToolbarDataModel( strokeWidth: 2.0, strokeColor: presetColors[1], strokePresets: strokePresets, activeToolIdentifier: .image))
+            .frame(width: 700, height: 40)
+
+        ToolbarControls(dataModel: ToolbarDataModel( strokeWidth: 2.0, strokeColor: presetColors[1], strokePresets: strokePresets, activeToolIdentifier: .grid))
             .frame(width: 700, height: 40)
     }
 }

@@ -16,9 +16,9 @@ struct StrokeEditingView: View {
             .font(.caption)
             .foregroundColor(.secondary)
 
-        StrokeWidthEditor(width: $dataModel.strokeWidth)
+        WidthEditor(width: $dataModel.strokeWidth, presets: [1,2,4,8,16,32], minimum: 1, maximum: 100)
 
-        StrokeColorEditor(color: $dataModel.strokeColor)
+        ColorEditor(color: $dataModel.strokeColor)
 
         StrokePresetsMenu(dataModel: dataModel, delegate: delegate)
     }

@@ -20,6 +20,7 @@ enum ToolIdentifier: Equatable, Hashable, Identifiable, CaseIterable {
     case eraser
     case image
     case cursor
+    case grid
 
     var symbolName: String {
         switch self {
@@ -37,6 +38,8 @@ enum ToolIdentifier: Equatable, Hashable, Identifiable, CaseIterable {
             "photo"
         case .cursor:
             "cursorarrow.square"
+        case .grid:
+            "grid"
         }
     }
     
@@ -56,6 +59,8 @@ enum ToolIdentifier: Equatable, Hashable, Identifiable, CaseIterable {
             "I"
         case .cursor:
             "A"
+        case .grid:
+            "G"
         }
     }
 
@@ -75,6 +80,8 @@ enum ToolIdentifier: Equatable, Hashable, Identifiable, CaseIterable {
             "Insert image"
         case .cursor:
             "Select & Move"
+        case .grid:
+            "Grid"
         }
     }
 
@@ -95,6 +102,9 @@ class ToolbarDataModel: ObservableObject {
     @Published var eraserWidth: CGFloat
     @Published var activeToolIdentifier: ToolIdentifier
     @Published var imageItemProperty: ImageItemProperty
+    @Published var isGridVisible: Bool
+    @Published var gridColor: SIMD4<Float>
+    @Published var gridSpacing: CGFloat
 
     init(
         strokeWidth: CGFloat,
@@ -102,7 +112,10 @@ class ToolbarDataModel: ObservableObject {
         strokePresets: [StrokePreset] = [],
         eraserWidth: CGFloat = 10.0,
         activeToolIdentifier: ToolIdentifier = .freehand,
-        imageItemProperty: ImageItemProperty = ImageItemProperty()
+        imageItemProperty: ImageItemProperty = ImageItemProperty(),
+        isGridVisible: Bool = false,
+        gridColor: SIMD4<Float> = SIMD4<Float>(x: 0.75, y: 0.75, z: 0.75, w: 1.0),
+        gridSpacing: CGFloat = 20.0
     ) {
         self.strokeWidth = strokeWidth
         self.strokeColor = strokeColor
@@ -110,5 +123,8 @@ class ToolbarDataModel: ObservableObject {
         self.strokePresets = strokePresets
         self.activeToolIdentifier = activeToolIdentifier
         self.imageItemProperty = imageItemProperty
+        self.isGridVisible = isGridVisible
+        self.gridColor = gridColor
+        self.gridSpacing = gridSpacing
     }
 }

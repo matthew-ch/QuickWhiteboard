@@ -9,7 +9,7 @@ import Foundation
 import CoreGraphics
 import SwiftUI
 
-let round_scale = 2.0
+let round_scale: CGFloat = 2.0
 
 extension CGPoint {
     static func from(_ float2: Point2D) -> Self {
@@ -20,8 +20,12 @@ extension CGPoint {
         .init(x: Float(x), y: Float(y))
     }
     
+    var alignedToSubpixel: Self {
+        .init(x: floor(x * round_scale) / round_scale, y: floor(y * round_scale) / round_scale)
+    }
+
     var rounded: Self {
-        .init(x: CGFloat(floor(x * round_scale) / round_scale), y: CGFloat(floor(y * round_scale) / round_scale))
+        .init(x: round(x), y: round(y))
     }
 }
 
@@ -34,7 +38,7 @@ extension CGSize {
         .init(x: Float(width), y: Float(height))
     }
     
-    var rounded: Self {
+    var alignedToSubpixel: Self {
         .init(width: CGFloat(floor(width * round_scale) / round_scale), height: CGFloat(floor(height * round_scale) / round_scale))
     }
 }

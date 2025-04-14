@@ -8,8 +8,6 @@
 import Foundation
 import Metal
 
-private let gridSpacing = 20.0
-
 final class GridItem: RenderItem {
 
     var globalPosition: CGPoint {
@@ -29,7 +27,9 @@ final class GridItem: RenderItem {
         true
     }
 
-    let color = SIMD4<Float>(x: 0.75, y: 0.75, z: 0.75, w: 1.0)
+    var color: SIMD4<Float> = .zero
+
+    var spacing: CGFloat = 20.0
 
     private var vertexBuffer: (any MTLBuffer)?
 
@@ -42,12 +42,12 @@ final class GridItem: RenderItem {
     }
 
     func upload(to device: MTLDevice) -> (vetexBuffer: any MTLBuffer, vertexCount: Int) {
-        let vLineCount = Int(localBoundingRect.width / gridSpacing) + 1
-        let hLineCount = Int(localBoundingRect.height / gridSpacing) + 1
-        let vLineStartX = Float(ceil(localBoundingRect.minX / gridSpacing) * gridSpacing)
+        let vLineCount = Int(localBoundingRect.width / spacing) + 1
+        let hLineCount = Int(localBoundingRect.height / spacing) + 1
+        let vLineStartX = Float(ceil(localBoundingRect.minX / spacing) * spacing)
         let vLineBottomY = Float(localBoundingRect.minY)
         let vLineTopY = Float(localBoundingRect.maxY)
-        let hLineStartY = Float(ceil(localBoundingRect.minY / gridSpacing) * gridSpacing)
+        let hLineStartY = Float(ceil(localBoundingRect.minY / spacing) * spacing)
         let hLineLeftX = Float(localBoundingRect.minX)
         let hLineRightX = Float(localBoundingRect.maxX)
         let vertexCount = (vLineCount + hLineCount) * 2
@@ -57,7 +57,7 @@ final class GridItem: RenderItem {
         }
         vertexBuffer!.contents().withMemoryRebound(to: Point2D.self, capacity: vertexCount) { pointer in
             for i in 0..<vLineCount {
-                let x = Float(i) * Float(gridSpacing) + vLineStartX
+                let x = Float(i) * Float(spacing) + vLineStartX
                 pointer[2 * i].x = x
                 pointer[2 * i].y = vLineBottomY
                 pointer[2 * i + 1].x = x
@@ -65,7 +65,7 @@ final class GridItem: RenderItem {
             }
             let offset = 2 * vLineCount
             for i in 0..<hLineCount {
-                let y = Float(i) * Float(gridSpacing) + hLineStartY
+                let y = Float(i) * Float(spacing) + hLineStartY
                 pointer[offset + 2 * i].x = hLineLeftX
                 pointer[offset + 2 * i].y = y
                 pointer[offset + 2 * i + 1].x = hLineRightX

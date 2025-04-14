@@ -1,5 +1,5 @@
 //
-//  StrokeColorEditor.swift
+//  ColorEditor.swift
 //  QuickWhiteboard
 //
 //  Created by Matthew.J on 2025/4/8.
@@ -23,9 +23,10 @@ let presetColors: [SIMD4<Float>] = [
     .init(x: 1.0, y: 1.0, z: 1.0, w: 1.0),
 ]
 
-struct StrokeColorEditor: View {
+struct ColorEditor: View {
 
     @Binding var color: SIMD4<Float>
+    var editsOpacity: Bool = true
     @State private var isShowingPopover = false
 
     var body: some View {
@@ -65,14 +66,17 @@ struct StrokeColorEditor: View {
                         makeGradient(color: opaqueColor(color), varying: \.z)
                     }
                     .frame(height: 24.0)
-                    CustomSlider(value: $color.w) {
-                        makeGradient(color: color, varying: \.w)
+
+                    if editsOpacity {
+                        CustomSlider(value: $color.w) {
+                            makeGradient(color: color, varying: \.w)
+                        }
+                        .frame(height: 24.0)
+                        .background(
+                            Checkerboard(cellLength: 8.0)
+                                .clipShape(RoundedRectangle(cornerRadius: 2.0))
+                        )
                     }
-                    .frame(height: 24.0)
-                    .background(
-                        Checkerboard(cellLength: 8.0)
-                            .clipShape(RoundedRectangle(cornerRadius: 2.0))
-                    )
                 }
                 .frame(width: 256.0)
                 .padding(.horizontal, 8.0)

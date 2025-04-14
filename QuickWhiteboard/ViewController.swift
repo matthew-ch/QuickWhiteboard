@@ -20,7 +20,10 @@ class ViewController: NSViewController {
     private var renderer: Renderer!
     private var origin: CGPoint = .zero
 
-    private var isShowingGrid = false
+    private var viewport: CGRect {
+        CGRect(origin: origin, size: canvasView.bounds.size)
+    }
+
     private var gridItem = GridItem(boundingRect: .zero)
 
     private lazy var freehandTool = FreehandTool()
@@ -30,6 +33,7 @@ class ViewController: NSViewController {
     private lazy var eraserTool = EraserTool()
     private lazy var imageTool = ImageTool()
     private lazy var cursorTool = CursorTool()
+    private lazy var noOpTool = NoOpTool()
 
     private var activeTool: any Tool {
         switch toolbarDataModel.activeToolIdentifier {
@@ -47,6 +51,8 @@ class ViewController: NSViewController {
             imageTool
         case .cursor:
             cursorTool
+        case .grid:
+            noOpTool
         }
     }
     
@@ -59,7 +65,7 @@ class ViewController: NSViewController {
 
     let toolbarDataModel = ToolbarDataModel(strokeWidth: 2.0, strokeColor: .init(x: 0.0, y: 0.0, z: 0.0, w: 1.0))
 
-    private var presetsChanging: AnyCancellable?
+    private var cancellables: Set<AnyCancellable> = []
 
     private var debug = false
     private var previousViewSize: CGSize = .zero
@@ -99,9 +105,13 @@ class ViewController: NSViewController {
         toolbarView.translatesAutoresizingMaskIntoConstraints = true
         toolbarContainerView.addSubview(toolbarView)
 
-        presetsChanging = presets.$strokePresets.sink { [weak self] strokePresets in
+        presets.$strokePresets.sink { [weak self] strokePresets in
             self?.toolbarDataModel.strokePresets = strokePresets
-        }
+        }.store(in: &cancellables)
+
+        toolbarDataModel.$isGridVisible.map({_ in }).merge(with: toolbarDataModel.$gridColor.map({_ in }), toolbarDataModel.$gridSpacing.map({_ in })).sink { [weak self] _ in
+            self?.setNeedsDisplay()
+        }.store(in: &cancellables)
     }
     
     override func viewDidAppear() {
@@ -205,7 +215,7 @@ class ViewController: NSViewController {
     
     private func convertEventLocation(_ location: NSPoint) -> CGPoint {
         let point = canvasView.convert(location, from: nil)
-        return CGPoint(x: point.x + origin.x, y: point.y + origin.y).rounded
+        return CGPoint(x: point.x + origin.x, y: point.y + origin.y).alignedToSubpixel
     }
     
     func canvasViewMouseDown(with event: NSEvent) {
@@ -291,8 +301,7 @@ class ViewController: NSViewController {
     }
 
     @IBAction func toggleGrid(_ sender: Any) {
-        isShowingGrid.toggle()
-        setNeedsDisplay()
+        toolbarDataModel.isGridVisible.toggle()
     }
 
     @objc func restoreClearedItems(_ removedItems: Any) {
@@ -352,7 +361,7 @@ class ViewController: NSViewController {
         let cgContext = CGContext(data: nil, width: Int(size.width * scale), height: Int(size.height * scale), bitsPerComponent: 8, bytesPerRow: 0, space: CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: CGImageAlphaInfo.noneSkipFirst.rawValue)!
         var rect = CGRect(origin: .zero, size: .init(width: size.width * scale, height: size.height * scale))
         if let cgImage = image.cgImage(forProposedRect: &rect, context: NSGraphicsContext(cgContext: cgContext, flipped: false), hints: nil) {
-            let imageCenter = CGPoint(x: origin.x + canvasView.bounds.midX, y: origin.y + canvasView.bounds.midY).rounded
+            let imageCenter = CGPoint(x: viewport.midX, y: viewport.midY).alignedToSubpixel
             let imageItem = ImageItem(image: cgImage, position: imageCenter, size: size.float2)
             imageTool.setImageItem(item: imageItem, host: self)
             toolbarDataModel.activeToolIdentifier = .image
@@ -490,7 +499,7 @@ extension ViewController: NSMenuItemValidation {
             return !isEditing && !items.isEmpty
         }
         if menuItem.action == #selector(toggleGrid(_:)) {
-            menuItem.state = isShowingGrid ? .on : .off
+            menuItem.state = toolbarDataModel.isGridVisible ? .on : .off
         }
         return true
     }
@@ -542,10 +551,12 @@ extension ViewController: MTKViewDelegate {
     }
     
     func draw(in view: MTKView) {
-        let viewport = CGRect(origin: origin, size: canvasView.bounds.size)
+        let viewport = self.viewport
         var renderItems: [any RenderItem] = []
-        if isShowingGrid {
+        if toolbarDataModel.isGridVisible {
             gridItem.localBoundingRect = viewport
+            gridItem.color = toolbarDataModel.gridColor
+            gridItem.spacing = toolbarDataModel.gridSpacing
             renderItems.append(gridItem)
         }
         renderItems.append(contentsOf: items)
