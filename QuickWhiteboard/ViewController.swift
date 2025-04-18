@@ -18,10 +18,11 @@ class ViewController: NSViewController {
 
     private var items: [any RenderItem] = []
     private var renderer: Renderer!
-    private var origin: CGPoint = .zero
+    private var center: CGPoint = .zero
 
     private var viewport: CGRect {
-        CGRect(origin: origin, size: canvasView.bounds.size)
+        CGRect(origin: .init(x: floor(center.x - canvasView.bounds.midX), y: floor(center.y - canvasView.bounds.midY)),
+               size: canvasView.bounds.size)
     }
 
     private var gridItem = GridItem(boundingRect: .zero)
@@ -68,7 +69,6 @@ class ViewController: NSViewController {
     private var cancellables: Set<AnyCancellable> = []
 
     private var debug = false
-    private var previousViewSize: CGSize = .zero
     
     private lazy var destinationURL: URL = {
         let destinationURL = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent("Drops")
@@ -134,7 +134,7 @@ class ViewController: NSViewController {
     
     private func renderImage() -> NSImage {
         let size = canvasView.drawableSize
-        let texture = renderer.renderOffscreen(of: size, items: items, viewport: CGRect(origin: origin, size: canvasView.bounds.size))
+        let texture = renderer.renderOffscreen(of: size, items: items, viewport: viewport)
         let width = Int(size.width)
         let height = Int(size.height)
         let bytesPerRow = width * 4
@@ -207,15 +207,15 @@ class ViewController: NSViewController {
 
     func canvasViewScrollWheel(with event: NSEvent) {
         let factor = event.hasPreciseScrollingDeltas ? 1.0 : 5.0
-        origin.x -= event.scrollingDeltaX * factor
-        origin.y += event.scrollingDeltaY * factor
-        origin = origin.rounded
+        center.x -= event.scrollingDeltaX * factor
+        center.y += event.scrollingDeltaY * factor
+        center = center.alignedToSubpixel
         setNeedsDisplay()
     }
     
     private func convertEventLocation(_ location: NSPoint) -> CGPoint {
         let point = canvasView.convert(location, from: nil)
-        return CGPoint(x: point.x + origin.x, y: point.y + origin.y).alignedToSubpixel
+        return CGPoint(x: point.x - canvasView.bounds.midX + center.x, y: point.y - canvasView.bounds.midY + center.y).alignedToSubpixel
     }
     
     func canvasViewMouseDown(with event: NSEvent) {
@@ -255,9 +255,9 @@ class ViewController: NSViewController {
 
     func canvasRightMouseDragged(with event: NSEvent) {
         if isRightMouseDown {
-            origin.x -= event.deltaX
-            origin.y += event.deltaY
-            origin = origin.rounded
+            center.x -= event.deltaX
+            center.y += event.deltaY
+            center = center.alignedToSubpixel
             setNeedsDisplay()
         }
     }
@@ -356,6 +356,7 @@ class ViewController: NSViewController {
     }
 
     private func addImage(_ image: NSImage) {
+        commitActiveTool()
         let size = image.size
         let scale = image.representations.first is NSPDFImageRep ? 2.0 : 1.0
         let cgContext = CGContext(data: nil, width: Int(size.width * scale), height: Int(size.height * scale), bitsPerComponent: 8, bytesPerRow: 0, space: CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: CGImageAlphaInfo.noneSkipFirst.rawValue)!
@@ -367,22 +368,17 @@ class ViewController: NSViewController {
             toolbarDataModel.activeToolIdentifier = .image
         }
     }
-    
+
+    nonisolated
     private func handleFile(url: URL) {
-        if let image = NSImage(contentsOf: url) {
-            DispatchQueue.main.async {
-                self.addImage(image)
+        Task.detached(priority: .high, operation: {
+            if let image = NSImage(contentsOf: url) {
+                await self.addImage(image)
             }
-        }
+        })
     }
     
     func viewHasSetNewSize(_ newSize: CGSize) {
-        if previousViewSize != .zero {
-            origin.x -= (newSize.width - previousViewSize.width) / 2.0
-            origin.y -= (newSize.height - previousViewSize.height) / 2.0
-            origin = origin.rounded
-        }
-        previousViewSize = newSize
     }
     
     private func canReadImage(from pasteboard: NSPasteboard) -> Bool {
@@ -526,9 +522,7 @@ extension ViewController: NSDraggingDestination {
             case let filePromiseReceiver as NSFilePromiseReceiver:
                 filePromiseReceiver.receivePromisedFiles(atDestination: self.destinationURL, operationQueue: self.workQueue) { @Sendable fileUrl, error in
                     if error == nil {
-                        Task { @MainActor in
-                            self.handleFile(url: fileUrl)
-                        }
+                        self.handleFile(url: fileUrl)
                     }
                 }
                 stop.pointee = true

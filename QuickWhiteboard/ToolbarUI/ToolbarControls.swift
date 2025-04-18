@@ -27,8 +27,8 @@ struct MainToolsView: View {
                 delegate?.onClickTool(identifier: id)
             }, label: {
                 Image(systemName: id.symbolName)
-                    .foregroundColor(id == dataModel.activeToolIdentifier ? Color.accentColor : Color.primary)
             })
+            .colorScheme(id == dataModel.activeToolIdentifier ? .light : .dark)
             .help(id.tooltip)
         }
     }

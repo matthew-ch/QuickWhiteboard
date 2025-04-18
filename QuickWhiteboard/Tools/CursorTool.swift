@@ -52,6 +52,9 @@ final class CursorTool: Tool {
         }
         for item in host.renderItems.reversed() {
             if !item.hidden && item.distance(to: location) < 1e-2 {
+                if item is ImageItem && !NSEvent.modifierFlags.contains(.option) {
+                    continue
+                }
                 let boundingRect = item.boundingRect
                 let rectItem = RectangleItem(strokeColor: movingColor, strokeWidth: 1.0)
                 rectItem.globalPosition = boundingRect.origin
@@ -76,6 +79,9 @@ final class CursorTool: Tool {
             for item in host.renderItems {
                 let itemRect = item.boundingRect
                 if !item.hidden && selectionRect.intersection(itemRect).equalTo(itemRect) {
+                    if item is ImageItem && !NSEvent.modifierFlags.contains(.option) {
+                        continue
+                    }
                     selectedItems.append(item)
                     outlineRect = outlineRect.union(itemRect)
                 }
