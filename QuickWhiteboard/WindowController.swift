@@ -35,4 +35,15 @@ extension WindowController: NSWindowDelegate {
     func windowDidChangeScreen(_ notification: Notification) {
         (window?.contentViewController as? ViewController)?.onScreenChange()
     }
+
+    func windowShouldClose(_ sender: NSWindow) -> Bool {
+        if let viewController = window?.contentViewController as? ViewController, viewController.toolbarDataModel.isImportant {
+            let alert = NSAlert()
+            alert.alertStyle = .critical
+            alert.messageText = localizedString("This window is marked important.")
+            alert.beginSheetModal(for: window!)
+            return false
+        }
+        return true
+    }
 }

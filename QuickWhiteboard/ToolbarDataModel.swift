@@ -105,6 +105,7 @@ class ToolbarDataModel: ObservableObject {
     @Published var isGridVisible: Bool
     @Published var gridColor: SIMD4<Float>
     @Published var gridSpacing: CGFloat
+    @Published var isImportant: Bool
 
     init(
         strokeWidth: CGFloat,
@@ -115,7 +116,8 @@ class ToolbarDataModel: ObservableObject {
         imageItemProperty: ImageItemProperty = ImageItemProperty(),
         isGridVisible: Bool = false,
         gridColor: SIMD4<Float> = SIMD4<Float>(x: 0.75, y: 0.75, z: 0.75, w: 1.0),
-        gridSpacing: CGFloat = 20.0
+        gridSpacing: CGFloat = 20.0,
+        isImportant: Bool = false,
     ) {
         self.strokeWidth = strokeWidth
         self.strokeColor = strokeColor
@@ -126,5 +128,6 @@ class ToolbarDataModel: ObservableObject {
         self.isGridVisible = isGridVisible
         self.gridColor = gridColor
         self.gridSpacing = gridSpacing
+        self.isImportant = isImportant
     }
 }

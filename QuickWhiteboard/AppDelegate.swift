@@ -23,6 +23,15 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         NotificationCenter.default.addObserver(self, selector: #selector(windowDidClose(_:)), name: NSWindow.willCloseNotification, object: nil)
     }
 
+    func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+        for wc in windowControllers {
+            if !wc.windowShouldClose(wc.window!) {
+                return .terminateCancel
+            }
+        }
+        return .terminateNow
+    }
+
     func applicationWillTerminate(_ aNotification: Notification) {
         // Insert code here to tear down your application
         presets.save()

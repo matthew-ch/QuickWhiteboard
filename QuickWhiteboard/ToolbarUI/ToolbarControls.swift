@@ -57,6 +57,14 @@ struct ToolbarControls: View {
                         StrokeEditingView(dataModel: dataModel, delegate: delegate)
                     }
                     Spacer()
+
+                    Divider()
+                        .frame(height: 16.0)
+                        .padding(.horizontal, 8.0)
+                    Toggle(isOn: $dataModel.isImportant, label: {
+                        Image(systemName: "exclamationmark.shield")
+                    })
+                    .help("Important")
 #if DEBUG
                     Button(action: {
                         delegate?.toggleDebug()
