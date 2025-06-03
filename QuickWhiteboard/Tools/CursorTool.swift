@@ -52,7 +52,7 @@ final class CursorTool: Tool {
         }
         for item in host.renderItems.reversed() {
             if !item.hidden && item.distance(to: location) < 1e-2 {
-                if item is ImageItem && !NSEvent.modifierFlags.contains(.option) {
+                if item.frozen && !NSEvent.modifierFlags.contains(.option) {
                     continue
                 }
                 let boundingRect = item.boundingRect
@@ -79,7 +79,7 @@ final class CursorTool: Tool {
             for item in host.renderItems {
                 let itemRect = item.boundingRect
                 if !item.hidden && selectionRect.intersection(itemRect).equalTo(itemRect) {
-                    if item is ImageItem && !NSEvent.modifierFlags.contains(.option) {
+                    if item.frozen && !NSEvent.modifierFlags.contains(.option) {
                         continue
                     }
                     selectedItems.append(item)

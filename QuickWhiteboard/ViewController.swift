@@ -280,10 +280,20 @@ class ViewController: NSViewController {
         pasteboard.writeObjects([image])
     }
 
+    @IBAction func freeze(_ sender: Any) {
+        let frozenItems = items.filter { item in
+            !item.hidden && !item.frozen
+        }
+        frozenItems.forEach { item in
+            item.frozen = true
+        }
+        undoManager?.registerUndo(withTarget: self, selector: #selector(unfreeze(_:)), object: frozenItems as NSArray)
+    }
+
     @IBAction func clearStrokes(_ sender: Any) {
         let erasedItems = ErasedItems()
         for item in items {
-            if item is ImageItem || item.hidden {
+            if item.frozen || item.hidden {
                 continue
             }
             erasedItems.selected.append(item)
@@ -302,6 +312,14 @@ class ViewController: NSViewController {
 
     @IBAction func toggleGrid(_ sender: Any) {
         toolbarDataModel.isGridVisible.toggle()
+    }
+
+    @objc func unfreeze(_ frozenItems: Any) {
+        let frozenItems = frozenItems as! NSArray as! Array<any RenderItem>
+        frozenItems.forEach { item in
+            item.frozen = false
+        }
+        undoManager?.registerUndo(withTarget: self, selector: #selector(freeze(_:)), object: nil)
     }
 
     @objc func restoreClearedItems(_ removedItems: Any) {
@@ -492,6 +510,9 @@ extension ViewController: NSMenuItemValidation {
             return !isEditing && !items.isEmpty
         }
         if menuItem.action == #selector(clearAll(_:)) {
+            return !isEditing && !items.isEmpty
+        }
+        if menuItem.action == #selector(freeze(_:)) {
             return !isEditing && !items.isEmpty
         }
         if menuItem.action == #selector(toggleGrid(_:)) {

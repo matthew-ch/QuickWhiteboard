@@ -12,6 +12,7 @@ protocol RenderItem: AnyObject, ToolEditingItem {
     var globalPosition: CGPoint { get set }
     var localBoundingRect: CGRect { get }
     var hidden: Bool { get set }
+    var frozen: Bool { get set }
     var isOpaque: Bool { get }
     func distance(to globalLocation: CGPoint) -> Float
 }

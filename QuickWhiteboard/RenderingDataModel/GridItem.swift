@@ -23,6 +23,8 @@ final class GridItem: RenderItem {
     
     var hidden: Bool = false
 
+    var frozen: Bool = true
+
     var isOpaque: Bool {
         true
     }

@@ -29,6 +29,8 @@ class DrawingItem: RenderItem, CanMarkAsDirty, HasGeneration {
 
     var hidden: Bool = false
 
+    var frozen: Bool = false
+
     var isOpaque: Bool {
         strokeColor.w == 1.0
     }

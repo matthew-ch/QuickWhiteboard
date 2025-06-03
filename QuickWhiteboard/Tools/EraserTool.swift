@@ -25,7 +25,7 @@ final class EraserTool: Tool {
             if renderItem.hidden || !renderItem.boundingRect.insetBy(dx: -eraserRadius, dy: -eraserRadius).contains(location) {
                 continue
             }
-            if renderItem is ImageItem && !NSEvent.modifierFlags.contains(.option) {
+            if renderItem.frozen && !NSEvent.modifierFlags.contains(.option) {
                 continue
             }
             if renderItem.distance(to: location) <=  Float(eraserRadius) {

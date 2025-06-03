@@ -94,6 +94,11 @@
                                             </connections>
                                         </menuItem>
                                         <menuItem isSeparatorItem="YES" id="WRV-NI-Exz"/>
+                                        <menuItem title="Freeze" keyEquivalent="f" id="nc5-jj-04I">
+                                            <connections>
+                                                <action selector="freeze:" target="Ady-hI-5gd" id="1XW-88-yaJ"/>
+                                            </connections>
+                                        </menuItem>
                                         <menuItem title="Clear Strokes" id="VLh-lp-Pgd">
                                             <string key="keyEquivalent" base64-UTF8="YES">
 CA

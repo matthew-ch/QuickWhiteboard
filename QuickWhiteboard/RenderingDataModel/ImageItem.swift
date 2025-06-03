@@ -30,6 +30,8 @@ final class ImageItem: RenderItem, CanMarkAsDirty, HasGeneration {
 
     var hidden: Bool = false
 
+    var frozen: Bool = true
+
     var isOpaque: Bool {
         false
     }

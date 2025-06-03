@@ -71,6 +71,8 @@
 /* Class = "NSMenu"; title = "Window"; ObjectID = "Td7-aD-5lo"; */
 "Td7-aD-5lo.title" = "窗口";
 
+"nc5-jj-04I.title" = "冻结";
+
 /* Class = "NSMenuItem"; title = "Clear Strokes"; ObjectID = "VLh-lp-Pgd"; */
 "VLh-lp-Pgd.title" = "清除笔触";
 
