@@ -142,6 +142,27 @@ CA
                                                 <action selector="toggleGrid:" target="Ady-hI-5gd" id="JvT-jk-hBo"/>
                                             </connections>
                                         </menuItem>
+                                        <menuItem isSeparatorItem="YES" id="6Mf-cG-LfQ"/>
+                                        <menuItem title="Upmost" keyEquivalent="" id="H60-kg-Vmr">
+                                            <connections>
+                                                <action selector="toUpmost:" target="Ady-hI-5gd" id="dzq-Nq-Tae"/>
+                                            </connections>
+                                        </menuItem>
+                                        <menuItem title="Bottommost" keyEquivalent="" id="deV-Ua-EPU">
+                                            <connections>
+                                                <action selector="toBottommost:" target="Ady-hI-5gd" id="V0B-Rl-aOy"/>
+                                            </connections>
+                                        </menuItem>
+                                        <menuItem title="Leftmost" keyEquivalent="" id="Pm5-aa-W9a">
+                                            <connections>
+                                                <action selector="toLeftmmost:" target="Ady-hI-5gd" id="aCS-n5-Twy"/>
+                                            </connections>
+                                        </menuItem>
+                                        <menuItem title="Rightmost" keyEquivalent="" id="NgP-GX-RTg">
+                                            <connections>
+                                                <action selector="toRightmmost:" target="Ady-hI-5gd" id="aol-hM-upn"/>
+                                            </connections>
+                                        </menuItem>
                                         <menuItem isSeparatorItem="YES" id="XjM-yx-yzn"/>
                                         <menuItem title="Enter Full Screen" keyEquivalent="f" id="4J7-dP-txa">
                                             <modifierMask key="keyEquivalentModifierMask" control="YES" command="YES"/>

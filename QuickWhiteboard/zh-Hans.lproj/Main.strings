@@ -38,6 +38,14 @@
 /* Class = "NSMenuItem"; title = "Grid"; ObjectID = "FoB-cV-pQu"; */
 "FoB-cV-pQu.title" = "网格";
 
+"H60-kg-Vmr.title" = "最上边";
+
+"deV-Ua-EPU.title" = "最下边";
+
+"Pm5-aa-W9a.title" = "最左边";
+
+"NgP-GX-RTg.title" = "最右边";
+
 /* Class = "NSMenuItem"; title = "QuickWhiteboard Help"; ObjectID = "FKE-Sm-Kum"; */
 "FKE-Sm-Kum.title" = "QuickWhiteboard 帮助";
 

@@ -25,6 +25,17 @@ class ViewController: NSViewController {
                size: canvasView.bounds.size)
     }
 
+    private var nonHiddenItemsBoundingRect: CGRect {
+        var rect = CGRect.zero
+        for item in items {
+            if item.hidden {
+                continue
+            }
+            rect = rect.union(item.boundingRect)
+        }
+        return rect
+    }
+
     private var gridItem = GridItem(boundingRect: .zero)
 
     private lazy var freehandTool = FreehandTool()
@@ -312,6 +323,54 @@ class ViewController: NSViewController {
 
     @IBAction func toggleGrid(_ sender: Any) {
         toolbarDataModel.isGridVisible.toggle()
+    }
+
+    @IBAction func toUpmost(_ sender: Any) {
+        let viewport = self.viewport
+        let rect = nonHiddenItemsBoundingRect.insetBy(dx: -20.0, dy: -20.0)
+        if rect.maxY > viewport.maxY {
+            center.y = rect.maxY - viewport.height / 2.0
+            center = center.alignedToSubpixel
+            setNeedsDisplay()
+        } else {
+            NSSound.beep()
+        }
+    }
+
+    @IBAction func toBottommost(_ sender: Any) {
+        let viewport = self.viewport
+        let rect = nonHiddenItemsBoundingRect.insetBy(dx: -20.0, dy: -20.0)
+        if rect.minY < viewport.minY {
+            center.y = rect.minY + viewport.height / 2.0
+            center = center.alignedToSubpixel
+            setNeedsDisplay()
+        } else {
+            NSSound.beep()
+        }
+    }
+
+    @IBAction func toLeftmmost(_ sender: Any) {
+        let viewport = self.viewport
+        let rect = nonHiddenItemsBoundingRect.insetBy(dx: -20.0, dy: -20.0)
+        if rect.minX < viewport.minX {
+            center.x = rect.minX + viewport.width / 2.0
+            center = center.alignedToSubpixel
+            setNeedsDisplay()
+        } else {
+            NSSound.beep()
+        }
+    }
+
+    @IBAction func toRightmmost(_ sender: Any) {
+        let viewport = self.viewport
+        let rect = nonHiddenItemsBoundingRect.insetBy(dx: -20.0, dy: -20.0)
+        if rect.maxX > viewport.maxX {
+            center.x = rect.maxX - viewport.width / 2.0
+            center = center.alignedToSubpixel
+            setNeedsDisplay()
+        } else {
+            NSSound.beep()
+        }
     }
 
     @objc func unfreeze(_ frozenItems: Any) {
