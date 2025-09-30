@@ -29,7 +29,9 @@ vertex Vertex simpleVertex(const constant float4 &frameRect [[ buffer(BufferInde
 }
 
 fragment float4 simpleFragment(const constant float4& color [[ buffer(BufferIndexColor) ]]) {
-    return color;
+    float4 output = color;
+    output.xyz *= output.w;
+    return output;
 }
 
 vertex VertexWithUV textureVertex(const constant float4 &frameRect [[ buffer(BufferIndexViewport) ]],

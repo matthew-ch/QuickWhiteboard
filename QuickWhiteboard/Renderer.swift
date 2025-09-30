@@ -45,7 +45,7 @@ final class Renderer {
         pipelineDescriptor.colorAttachments[0].destinationAlphaBlendFactor = .one
         pipelineDescriptor.colorAttachments[0].destinationRGBBlendFactor = .oneMinusSourceAlpha
         pipelineDescriptor.colorAttachments[0].sourceAlphaBlendFactor = .zero
-        pipelineDescriptor.colorAttachments[0].sourceRGBBlendFactor = .sourceAlpha
+        pipelineDescriptor.colorAttachments[0].sourceRGBBlendFactor = .one
         alphaPipelineState = try! device.makeRenderPipelineState(descriptor: pipelineDescriptor)
 
         pipelineDescriptor.vertexFunction = defaultLibrary.makeFunction(name: "textureVertex")

@@ -28,7 +28,7 @@ struct MainToolsView: View {
             }, label: {
                 Image(systemName: id.symbolName)
             })
-            .colorScheme(id == dataModel.activeToolIdentifier ? .light : .dark)
+            .foregroundColor(id == dataModel.activeToolIdentifier ? Color.accentColor : nil)
             .help(id.tooltip)
         }
     }

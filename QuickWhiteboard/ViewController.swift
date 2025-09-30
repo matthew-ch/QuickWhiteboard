@@ -436,9 +436,8 @@ class ViewController: NSViewController {
         commitActiveTool()
         let size = image.size
         let scale = image.representations.first is NSPDFImageRep ? 2.0 : 1.0
-        let cgContext = CGContext(data: nil, width: Int(size.width * scale), height: Int(size.height * scale), bitsPerComponent: 8, bytesPerRow: 0, space: CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: CGImageAlphaInfo.noneSkipFirst.rawValue)!
         var rect = CGRect(origin: .zero, size: .init(width: size.width * scale, height: size.height * scale))
-        if let cgImage = image.cgImage(forProposedRect: &rect, context: NSGraphicsContext(cgContext: cgContext, flipped: false), hints: nil) {
+        if let cgImage = image.cgImage(forProposedRect: &rect, context: nil, hints: nil) {
             let imageCenter = CGPoint(x: viewport.midX, y: viewport.midY).alignedToSubpixel
             let imageItem = ImageItem(image: cgImage, position: imageCenter, size: size.float2)
             imageTool.setImageItem(item: imageItem, host: self)
@@ -448,7 +447,7 @@ class ViewController: NSViewController {
 
     nonisolated
     private func handleFile(url: URL) {
-        Task.detached(priority: .high, operation: {
+        Task.detached(priority: nil, operation: {
             if let image = NSImage(contentsOf: url) {
                 await self.addImage(image)
             }

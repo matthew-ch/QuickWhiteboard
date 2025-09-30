@@ -46,8 +46,7 @@ final class ImageItem: RenderItem, CanMarkAsDirty, HasGeneration {
 
     @OnDemand(\ImageItem.resolvedUVBuffer, once: true)
     private var uvBuffer: (any MTLBuffer)
-    
-    static var textureLoader: MTKTextureLoader!
+
     static let uvs: [Point2D] = [
         .init(0.0, 1.0),
         .init(1.0, 0.0),
@@ -93,12 +92,23 @@ final class ImageItem: RenderItem, CanMarkAsDirty, HasGeneration {
     }
 
     private var resolvedTexture: any MTLTexture {
-        try! Self.textureLoader.newTexture(cgImage: image, options: [
-            .allocateMipmaps: NSNumber(booleanLiteral: false),
-            .textureStorageMode: NSNumber(value: MTLStorageMode.private.rawValue),
-            .textureUsage: NSNumber(value: MTLTextureUsage.shaderRead.rawValue),
-            .SRGB: NSNumber(booleanLiteral: false),
-        ])
+        let cgContext = CGContext(
+            data: nil,
+            width: image.width,
+            height: image.height,
+            bitsPerComponent: 8,
+            bytesPerRow: 0,
+            space: CGColorSpace(name: CGColorSpace.sRGB),
+            bitmapInfo: CGBitmapInfo(alpha: .premultipliedLast)
+        )!
+        cgContext.draw(image, in: CGRect(x: 0, y: 0, width: image.width, height: image.height))
+        let data = cgContext.data!
+        let bytesPerRow = cgContext.bytesPerRow
+        let length = bytesPerRow * cgContext.height
+        let textureDescriptor = MTLTextureDescriptor.texture2DDescriptor(pixelFormat: .rgba8Unorm, width: cgContext.width, height: cgContext.height, mipmapped: false)
+        textureDescriptor.usage = .shaderRead
+        let buffer = device!.makeBuffer(bytes: data, length: length, options: textureDescriptor.resourceOptions)
+        return buffer!.makeTexture(descriptor: textureDescriptor, offset: 0, bytesPerRow: cgContext.bytesPerRow)!
     }
 
     private var resolvedVertexBuffer: any MTLBuffer {
@@ -130,9 +140,6 @@ final class ImageItem: RenderItem, CanMarkAsDirty, HasGeneration {
     }
 
     func upload(to device: MTLDevice) -> (texture: any MTLTexture, vertexBuffer: any MTLBuffer, uvBuffer: any MTLBuffer, vertexCount: Int) {
-        if Self.textureLoader == nil {
-            Self.textureLoader = MTKTextureLoader(device: device)
-        }
         self.device = device
         return (texture, vertexBuffer, uvBuffer, 6)
     }
