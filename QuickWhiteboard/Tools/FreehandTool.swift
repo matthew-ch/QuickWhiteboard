@@ -22,7 +22,7 @@ final class FreehandTool: Tool {
     
     func mouseDown(with event: NSEvent, location: CGPoint, host: any ToolHost) {
         let item = FreehandItem(strokeColor: host.toolbarDataModel.strokeColor, strokeWidth: host.toolbarDataModel.strokeWidth)
-        item.addPointSample(location: location)
+        item.addPointSample(location: location, pressure: event.pressure)
         _editingItem = item
         host.setNeedsDisplay()
     }
@@ -33,7 +33,7 @@ final class FreehandTool: Tool {
     
     func mouseDragged(with event: NSEvent, location: CGPoint, host: any ToolHost) {
         if let _editingItem, location.float2 != _editingItem.points.last?.location {
-            _editingItem.addPointSample(location: location)
+            _editingItem.addPointSample(location: location, pressure: event.pressure)
             host.setNeedsDisplay()
         }
     }

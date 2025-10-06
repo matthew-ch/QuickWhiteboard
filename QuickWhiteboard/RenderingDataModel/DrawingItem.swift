@@ -11,6 +11,20 @@ import simd
 
 struct PointSample {
     let location: Point2D
+    let pressure: Float
+
+    init(location: Point2D) {
+        self.init(location: location, pressure: 1.0)
+    }
+
+    init(location: Point2D, pressure: Float) {
+        self.location = location
+        self.pressure = pressure
+    }
+
+    var scaleFactor: Float {
+        0.15 + 0.85 * pressure.squareRoot()
+    }
 }
 
 class DrawingItem: RenderItem, CanMarkAsDirty, HasGeneration {
@@ -53,38 +67,83 @@ class DrawingItem: RenderItem, CanMarkAsDirty, HasGeneration {
         let previousLocation = previousPoint?.location
         let nextLocation = nextPoint?.location
 
-        let pointTriangleCount = max(Int(ceilf(Float.pi * strokeWidth / 2.0)), 4)
+        let radius = point.scaleFactor * strokeWidth / 2.0
+        let pointTriangleCount = max(Int(ceilf(Float.pi * radius)), 4)
         var points: [Point2D] = divideUnitCircle(count: pointTriangleCount)
         points.append(points[0])
-        let radius = strokeWidth / 2.0
         var visibleIndices = Array(0..<pointTriangleCount)
 
         var result: [Point2D] = []
 
         if let nextLocation {
-            let v = normalize(location - nextLocation)
-            visibleIndices = visibleIndices.filter { i in
-                simd_dot(points[i], v) > 0 || simd_dot(points[i + 1], v) > 0
+            let nextRadius = nextPoint!.scaleFactor * strokeWidth / 2.0
+            let v = location - nextLocation
+            let dc = simd_length(v)
+            let dr = nextRadius - radius
+            let sin_theta = dr / dc
+            if sin_theta >= 1.0 {
+                visibleIndices = []
+            } else if sin_theta > -1.0 {
+                let cos_theta = (1.0 - sin_theta * sin_theta).squareRoot()
+                let mat1 = simd_float2x2(rows: [
+                    .init(cos_theta, -sin_theta),
+                    .init(sin_theta, cos_theta),
+                ])
+                let v1 = mat1 * v
+                let mat2 = simd_float2x2(rows: [
+                    .init(cos_theta, sin_theta),
+                    .init(-sin_theta, cos_theta),
+                ])
+                let v2 = mat2 * v
+                visibleIndices = visibleIndices.filter { i in
+                    simd_dot(points[i], v1) > 0 || simd_dot(points[i + 1], v1) > 0 || simd_dot(points[i], v2) > 0 || simd_dot(points[i + 1], v2) > 0
+                }
             }
         }
 
         if let previousLocation {
-            let v = normalize(location - previousLocation)
-            let u = Vector2D(-v.y, v.x)
-            let p0 = previousLocation + u * radius
-            let p1 = previousLocation - u * radius
-            let p2 = location + u * radius
-            let p3 = location - u * radius
-            result.append(p0)
-            result.append(p1)
-            result.append(p2)
-            result.append(p2)
-            result.append(p1)
-            result.append(p3)
+            let previousRadius = previousPoint!.scaleFactor * strokeWidth / 2.0
+            let v = location - previousLocation
+            let dc = simd_length(v)
+            let dr = radius - previousRadius
+            let sin_theta = dr / dc
+            if sin_theta > -1.0 && sin_theta < 1.0 {
+                let cos_theta = (1.0 - sin_theta * sin_theta).squareRoot()
+                let mat1 = simd_float2x2(rows: [
+                    .init(cos_theta, -sin_theta),
+                    .init(sin_theta, cos_theta),
+                ])
+                let v1 = mat1 * v
+                let mat2 = simd_float2x2(rows: [
+                    .init(cos_theta, sin_theta),
+                    .init(-sin_theta, cos_theta),
+                ])
+                let v2 = mat2 * v
 
-            visibleIndices = visibleIndices.filter { i in
-                simd_dot(points[i], v) > 0 || simd_dot(points[i + 1], v) > 0
+                let u1 = simd_normalize(Vector2D(-v1.y, v1.x))
+                let u2 = simd_normalize(Vector2D(v2.y, -v2.x))
+                let p1 = previousLocation + u1 * previousRadius
+                let p2 = previousLocation + u2 * previousRadius
+                let p3 = location + u1 * radius
+                let p4 = location + u2 * radius
+                result.append(p1)
+                result.append(previousLocation)
+                result.append(p3)
+                result.append(p3)
+                result.append(previousLocation)
+                result.append(location)
+                result.append(previousLocation)
+                result.append(p2)
+                result.append(location)
+                result.append(location)
+                result.append(p2)
+                result.append(p4)
+
+                visibleIndices = visibleIndices.filter { i in
+                    simd_dot(points[i], v1) > 0 || simd_dot(points[i + 1], v1) > 0 || simd_dot(points[i], v2) > 0 || simd_dot(points[i + 1], v2) > 0
+                }
             }
+
         }
 
         for i in visibleIndices {
@@ -161,8 +220,8 @@ final class FreehandItem: DrawingItem {
         return CGRect(origin: .from(minxy), size: .from(maxxy - minxy))
     }
 
-    func addPointSample(location: CGPoint) {
-        _points.append(PointSample(location: location.float2))
+    func addPointSample(location: CGPoint, pressure: Float) {
+        _points.append(PointSample(location: location.float2, pressure: pressure))
     }
 }
 
