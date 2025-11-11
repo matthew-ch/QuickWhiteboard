@@ -487,6 +487,24 @@
         }
       }
     },
+    "nEU-g9-g5r.title" : {
+      "comment" : "Class = \"NSMenuItem\"; title = \"Middle\"; ObjectID = \"nEU-g9-g5r\";",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Middle"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "中间"
+          }
+        }
+      }
+    },
     "NgP-GX-RTg.title" : {
       "comment" : "Class = \"NSMenuItem\"; title = \"Rightmost\"; ObjectID = \"NgP-GX-RTg\";",
       "extractionState" : "extracted_with_value",
@@ -758,19 +776,19 @@
       }
     },
     "x3v-GG-iWU.title" : {
-      "comment" : "Class = \"NSMenuItem\"; title = \"Copy\"; ObjectID = \"x3v-GG-iWU\";",
+      "comment" : "Class = \"NSMenuItem\"; title = \"Copy Visible Area\"; ObjectID = \"x3v-GG-iWU\";",
       "extractionState" : "extracted_with_value",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "new",
-            "value" : "Copy"
+            "value" : "Copy Visible Area"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "拷贝"
+            "value" : "拷贝可视区域"
           }
         }
       }

@@ -26,12 +26,15 @@ class ViewController: NSViewController {
     }
 
     private var nonHiddenItemsBoundingRect: CGRect {
-        var rect = CGRect.zero
+        var rect = CGRect.null
         for item in items {
             if item.hidden {
                 continue
             }
             rect = rect.union(item.boundingRect)
+        }
+        if rect.isNull {
+            return viewport
         }
         return rect
     }
@@ -280,11 +283,19 @@ class ViewController: NSViewController {
         }
     }
 
+    @IBAction func undo(_ sender: Any) {
+        undoManager?.undo()
+    }
+
+    @IBAction func redo(_ sender: Any) {
+        undoManager?.redo()
+    }
+
     @IBAction func paste(_ sender: Any) {
         readImage(from: NSPasteboard.general)
     }
     
-    @IBAction func copy(_ sender: Any) {
+    @IBAction func copyVisibleArea(_ sender: Any) {
         let image = renderImage()
         let pasteboard = NSPasteboard.general
         pasteboard.clearContents()
@@ -325,52 +336,44 @@ class ViewController: NSViewController {
         toolbarDataModel.isGridVisible.toggle()
     }
 
+    @IBAction func toMiddle(_ sender: Any) {
+        let rect = nonHiddenItemsBoundingRect
+        center.x = rect.midX
+        center.y = rect.midY
+        center = center.alignedToSubpixel
+        setNeedsDisplay()
+    }
+
     @IBAction func toUpmost(_ sender: Any) {
         let viewport = self.viewport
         let rect = nonHiddenItemsBoundingRect.insetBy(dx: -20.0, dy: -20.0)
-        if rect.maxY > viewport.maxY {
-            center.y = rect.maxY - viewport.height / 2.0
-            center = center.alignedToSubpixel
-            setNeedsDisplay()
-        } else {
-            NSSound.beep()
-        }
+        center.y = rect.maxY - viewport.height / 2.0
+        center = center.alignedToSubpixel
+        setNeedsDisplay()
     }
 
     @IBAction func toBottommost(_ sender: Any) {
         let viewport = self.viewport
         let rect = nonHiddenItemsBoundingRect.insetBy(dx: -20.0, dy: -20.0)
-        if rect.minY < viewport.minY {
-            center.y = rect.minY + viewport.height / 2.0
-            center = center.alignedToSubpixel
-            setNeedsDisplay()
-        } else {
-            NSSound.beep()
-        }
+        center.y = rect.minY + viewport.height / 2.0
+        center = center.alignedToSubpixel
+        setNeedsDisplay()
     }
 
     @IBAction func toLeftmmost(_ sender: Any) {
         let viewport = self.viewport
         let rect = nonHiddenItemsBoundingRect.insetBy(dx: -20.0, dy: -20.0)
-        if rect.minX < viewport.minX {
-            center.x = rect.minX + viewport.width / 2.0
-            center = center.alignedToSubpixel
-            setNeedsDisplay()
-        } else {
-            NSSound.beep()
-        }
+        center.x = rect.minX + viewport.width / 2.0
+        center = center.alignedToSubpixel
+        setNeedsDisplay()
     }
 
     @IBAction func toRightmmost(_ sender: Any) {
         let viewport = self.viewport
         let rect = nonHiddenItemsBoundingRect.insetBy(dx: -20.0, dy: -20.0)
-        if rect.maxX > viewport.maxX {
-            center.x = rect.maxX - viewport.width / 2.0
-            center = center.alignedToSubpixel
-            setNeedsDisplay()
-        } else {
-            NSSound.beep()
-        }
+        center.x = rect.maxX - viewport.width / 2.0
+        center = center.alignedToSubpixel
+        setNeedsDisplay()
     }
 
     @objc func unfreeze(_ frozenItems: Any) {
@@ -561,17 +564,27 @@ extension ViewController: NSMenuItemValidation {
         if menuItem.action == #selector(paste(_:)) {
             return !isEditing && canReadImage(from: NSPasteboard.general)
         }
-        if menuItem.action == #selector(copy(_:)) {
-            return !isEditing && !items.isEmpty
+        if menuItem.action == #selector(copyVisibleArea(_:)) {
+            return !isEditing
         }
         if menuItem.action == #selector(clearStrokes(_:)) {
-            return !isEditing && !items.isEmpty
+            return !isEditing && items.count(where: { item in
+                !item.hidden && !item.frozen
+            }) > 0
         }
         if menuItem.action == #selector(clearAll(_:)) {
             return !isEditing && !items.isEmpty
         }
         if menuItem.action == #selector(freeze(_:)) {
-            return !isEditing && !items.isEmpty
+            return !isEditing && items.count(where: { item in
+                !item.frozen
+            }) > 0
+        }
+        if menuItem.action == #selector(undo(_:)) {
+            return !isEditing && (undoManager?.canUndo ?? false)
+        }
+        if menuItem.action == #selector(redo(_:)) {
+            return !isEditing && (undoManager?.canRedo ?? false)
         }
         if menuItem.action == #selector(toggleGrid(_:)) {
             menuItem.state = toolbarDataModel.isGridVisible ? .on : .off

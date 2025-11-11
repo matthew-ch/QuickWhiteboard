@@ -117,9 +117,9 @@ CA
                                             </connections>
                                         </menuItem>
                                         <menuItem isSeparatorItem="YES" id="pNZ-lT-u7z"/>
-                                        <menuItem title="Copy" keyEquivalent="c" id="x3v-GG-iWU">
+                                        <menuItem title="Copy Visible Area" keyEquivalent="C" id="x3v-GG-iWU">
                                             <connections>
-                                                <action selector="copy:" target="Ady-hI-5gd" id="G1f-GL-Joy"/>
+                                                <action selector="copyVisibleArea:" target="Ady-hI-5gd" id="wfj-Kp-Oc1"/>
                                             </connections>
                                         </menuItem>
                                         <menuItem title="Paste" keyEquivalent="v" id="gVA-U4-sdL">
@@ -143,6 +143,11 @@ CA
                                             </connections>
                                         </menuItem>
                                         <menuItem isSeparatorItem="YES" id="6Mf-cG-LfQ"/>
+                                        <menuItem title="Middle" keyEquivalent="." id="nEU-g9-g5r">
+                                            <connections>
+                                                <action selector="toMiddle:" target="Ady-hI-5gd" id="N1a-Tf-vfn"/>
+                                            </connections>
+                                        </menuItem>
                                         <menuItem title="Upmost" keyEquivalent="" id="H60-kg-Vmr">
                                             <connections>
                                                 <action selector="toUpmost:" target="Ady-hI-5gd" id="dzq-Nq-Tae"/>
