@@ -146,8 +146,7 @@ class ViewController: NSViewController {
         }
     }
     
-    private func renderImage() -> NSImage {
-        let size = canvasView.drawableSize
+    private func renderImage(size: CGSize, viewport: CGRect) -> CGImage {
         let texture = renderer.renderOffscreen(of: size, items: items, viewport: viewport)
         let width = Int(size.width)
         let height = Int(size.height)
@@ -171,11 +170,27 @@ class ViewController: NSViewController {
             shouldInterpolate: false,
             intent: .defaultIntent
         )!
-
-        let image = NSImage(cgImage: cgImage, size: .zero)
-        return image
+        return cgImage
     }
-    
+
+    private func renderCanvas() -> CGImage {
+        let renderingBound = nonHiddenItemsBoundingRect.insetBy(dx: -10.0, dy: -10.0)
+        var size = renderingBound.size
+        let scaleFactor = view.window!.backingScaleFactor
+        size.width *= scaleFactor
+        size.height *= scaleFactor
+        let maximumDimension = 8192.0
+        if size.width > maximumDimension {
+            size.height /= size.width / maximumDimension
+            size.width = maximumDimension
+        }
+        if size.height > maximumDimension {
+            size.width /= size.height / maximumDimension
+            size.height = maximumDimension
+        }
+        return renderImage(size: size, viewport: renderingBound)
+    }
+
     // MARK: event handling
 
     func onScreenChange() {
@@ -283,6 +298,29 @@ class ViewController: NSViewController {
         }
     }
 
+    @IBAction func saveCanvas(_ sender: Any) {
+        let savePanel = NSSavePanel()
+        savePanel.allowedContentTypes = [.png]
+        savePanel.canCreateDirectories = true
+        savePanel.beginSheetModal(for: view.window!) { [weak self] res in
+            guard res == .OK, let self else {
+                return
+            }
+            if let url = savePanel.url {
+                let cgImage = self.renderCanvas()
+                let bitmap = NSBitmapImageRep(cgImage: cgImage)
+                guard let data = bitmap.representation(using: .png, properties: [:]) else {
+                    return
+                }
+                do {
+                    try data.write(to: url, options: .atomic)
+                } catch let error {
+                    print("save canvas error", error)
+                }
+            }
+        }
+    }
+
     @IBAction func undo(_ sender: Any) {
         undoManager?.undo()
     }
@@ -296,7 +334,8 @@ class ViewController: NSViewController {
     }
     
     @IBAction func copyVisibleArea(_ sender: Any) {
-        let image = renderImage()
+        let cgImage = renderImage(size: canvasView.drawableSize, viewport: viewport)
+        let image = NSImage(cgImage: cgImage, size: .zero)
         let pasteboard = NSPasteboard.general
         pasteboard.clearContents()
         pasteboard.writeObjects([image])
@@ -509,7 +548,8 @@ extension ViewController: ToolbarDelegate {
     
     @objc
     func exportCanvas(_ sender: NSButton) {
-        let image = renderImage()
+        let cgImage = renderCanvas()
+        let image = NSImage(cgImage: cgImage, size: .zero)
         NSSharingServicePicker(items: [image]).show(relativeTo: .zero, of: sender, preferredEdge: .minY)
     }
 
@@ -561,6 +601,9 @@ extension ViewController: @preconcurrency NSServicesMenuRequestor {
 // MARK: NSMenuItemValidation
 extension ViewController: NSMenuItemValidation {
     func validateMenuItem(_ menuItem: NSMenuItem) -> Bool {
+        if menuItem.action == #selector(saveCanvas(_:)) {
+            return !isEditing
+        }
         if menuItem.action == #selector(paste(_:)) {
             return !isEditing && canReadImage(from: NSPasteboard.general)
         }

@@ -73,7 +73,7 @@
                                         </menuItem>
                                         <menuItem title="Save…" keyEquivalent="s" id="pxx-59-PXV">
                                             <connections>
-                                                <action selector="saveDocument:" target="Ady-hI-5gd" id="teZ-XB-qJY"/>
+                                                <action selector="saveCanvas:" target="Ady-hI-5gd" id="wnE-Nv-7RX"/>
                                             </connections>
                                         </menuItem>
                                     </items>
