@@ -341,6 +341,14 @@ class ViewController: NSViewController {
         pasteboard.writeObjects([image])
     }
 
+    @IBAction func copyCanvas(_ sender: Any) {
+        let cgImage = renderCanvas()
+        let image = NSImage(cgImage: cgImage, size: .zero)
+        let pasteboard = NSPasteboard.general
+        pasteboard.clearContents()
+        pasteboard.writeObjects([image])
+    }
+
     @IBAction func freeze(_ sender: Any) {
         let frozenItems = items.filter { item in
             !item.hidden && !item.frozen
@@ -608,6 +616,9 @@ extension ViewController: NSMenuItemValidation {
             return !isEditing && canReadImage(from: NSPasteboard.general)
         }
         if menuItem.action == #selector(copyVisibleArea(_:)) {
+            return !isEditing
+        }
+        if menuItem.action == #selector(copyCanvas(_:)) {
             return !isEditing
         }
         if menuItem.action == #selector(clearStrokes(_:)) {

@@ -792,6 +792,24 @@
           }
         }
       }
+    },
+    "ZKQ-NE-4LS.title" : {
+      "comment" : "Class = \"NSMenuItem\"; title = \"Copy Canvas\"; ObjectID = \"ZKQ-NE-4LS\";",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Copy Canvas"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "拷贝画布"
+          }
+        }
+      }
     }
   },
   "version" : "1.1"
