@@ -68,22 +68,19 @@ struct StrokePresetsMenu: View {
                 .padding(.vertical, 6.0)
             }
 
-            GeometryReader { proxy in
-                HStack {
-                    ForEach(dataModel.strokePresets[0..<min(Int(proxy.size.width/25.0), dataModel.strokePresets.count)]) { stroke in
-                        Button {
-                            dataModel.strokeWidth = stroke.width
-                            dataModel.strokeColor = stroke.color
-                        } label: {
-                            StrokeColorSizeWidget(strokeColor: stroke.color, strokeWidth: stroke.width)
-                        }
-
+            HStack {
+                ForEach(dataModel.strokePresets) { stroke in
+                    Button {
+                        dataModel.strokeWidth = stroke.width
+                        dataModel.strokeColor = stroke.color
+                    } label: {
+                        StrokeColorSizeWidget(strokeColor: stroke.color, strokeWidth: stroke.width)
                     }
-                    Spacer(minLength: 0)
+
                 }
-                .buttonStyle(.plain)
-                .frame(width: proxy.size.width, height: proxy.size.height)
+                Spacer(minLength: 0)
             }
+            .buttonStyle(.plain)
         }
     }
 }

@@ -14,10 +14,6 @@ class CanvasView: MTKView {
         delegate as? ViewController
     }
     
-    override var mouseDownCanMoveWindow: Bool {
-        false
-    }
-    
     override var acceptsFirstResponder: Bool {
         true
     }

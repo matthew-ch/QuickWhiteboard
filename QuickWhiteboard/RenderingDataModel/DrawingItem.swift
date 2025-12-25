@@ -213,9 +213,10 @@ final class FreehandItem: DrawingItem {
         assert(!points.isEmpty)
         var minxy = Point2D(x: Float.infinity, y: Float.infinity)
         var maxxy = Point2D(x: -Float.infinity, y: -Float.infinity)
+        let halfWidth = strokeWidth / 2.0
         for point in points {
-            minxy = simd_min(minxy, point.location - strokeWidth)
-            maxxy = simd_max(maxxy, point.location + strokeWidth)
+            minxy = simd_min(minxy, point.location - halfWidth)
+            maxxy = simd_max(maxxy, point.location + halfWidth)
         }
         return CGRect(origin: .from(minxy), size: .from(maxxy - minxy))
     }

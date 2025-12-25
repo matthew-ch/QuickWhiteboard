@@ -112,7 +112,12 @@ class ViewController: NSViewController {
         
         canvasView.registerForDraggedTypes(NSFilePromiseReceiver.readableDraggedTypes.map { NSPasteboard.PasteboardType($0) })
         canvasView.registerForDraggedTypes([NSPasteboard.PasteboardType.fileURL])
-        
+
+        if let preset = presets.strokePresets.first {
+            toolbarDataModel.strokeWidth = preset.width
+            toolbarDataModel.strokeColor = preset.color
+        }
+
         let toolbarView = NSHostingView(rootView: ToolbarControls(dataModel: toolbarDataModel, delegate: self))
         toolbarView.autoresizingMask = [.width]
         toolbarView.frame = toolbarContainerView.bounds
@@ -213,6 +218,12 @@ class ViewController: NSViewController {
             return
         }
         guard let chars = event.charactersIgnoringModifiers?.lowercased() else {
+            return
+        }
+        if let digit = Int(chars), digit > 0 && digit <= presets.strokePresets.count {
+            let preset = presets.strokePresets[digit - 1]
+            toolbarDataModel.strokeWidth = preset.width
+            toolbarDataModel.strokeColor = preset.color
             return
         }
         for toolIdentifier in ToolIdentifier.allCases {

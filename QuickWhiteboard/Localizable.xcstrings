@@ -213,6 +213,7 @@
       }
     },
     "Toggle debug" : {
+      "extractionState" : "manual",
       "shouldTranslate" : false
     },
     "Width" : {
